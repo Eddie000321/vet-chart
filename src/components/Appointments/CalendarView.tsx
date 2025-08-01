@@ -1,0 +1,538 @@
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, User, PawPrint, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { Appointment } from '../../types';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, getDay, setMonth, setYear, getMonth, getYear } from 'date-fns';
+import { useBusinessHours } from '../../hooks/useBusinessHours';
+import { appointmentsAPI } from '../../services/api';
+
+interface CalendarViewProps {
+  viewMode: 'day' | 'week' | 'month';
+  appointments: Appointment[];
+  currentDate: Date;
+  setCurrentDate: (date: Date) => void;
+  onAppointmentClick: (appointment: Appointment) => void;
+  onStatusChange: (id: string, status: Appointment['status']) => void;
+  onDeleteAppointment: (id: string) => void;
+  deletingId: string | null;
+  onDayClick?: (date: Date) => void;
+  onAppointmentUpdated?: (appointment: Appointment) => void;
+}
+
+const CalendarView: React.FC<CalendarViewProps> = ({
+  viewMode,
+  appointments,
+  currentDate,
+  setCurrentDate,
+  onAppointmentClick,
+  onStatusChange,
+  onDeleteAppointment,
+  deletingId,
+  onDayClick,
+  onAppointmentUpdated
+}) => {
+
+  const { generateTimeSlots } = useBusinessHours();
+  const [draggedAppointment, setDraggedAppointment] = useState<Appointment | null>(null);
+  const [dragOverSlot, setDragOverSlot] = useState<{ date: Date; time: string; doctor?: string } | null>(null);
+
+  // Generate year options (current year ± 5 years)
+  const currentYear = getYear(new Date());
+  const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
+  
+  // Month options
+  const monthOptions = [
+    { value: 0, label: 'January' },
+    { value: 1, label: 'February' },
+    { value: 2, label: 'March' },
+    { value: 3, label: 'April' },
+    { value: 4, label: 'May' },
+    { value: 5, label: 'June' },
+    { value: 6, label: 'July' },
+    { value: 7, label: 'August' },
+    { value: 8, label: 'September' },
+    { value: 9, label: 'October' },
+    { value: 10, label: 'November' },
+    { value: 11, label: 'December' }
+  ];
+  const getStatusColor = (status: Appointment['status']) => {
+    switch (status) {
+      case 'scheduled':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'completed':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'cancelled':
+        return 'bg-red-100 text-red-700 border-red-200';
+      case 'no-show':
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
+  const navigateDate = (direction: 'prev' | 'next') => {
+    if (viewMode === 'day') {
+      setCurrentDate(direction === 'next' ? addDays(currentDate, 1) : subDays(currentDate, 1));
+    } else if (viewMode === 'week') {
+      setCurrentDate(direction === 'next' ? addWeeks(currentDate, 1) : subWeeks(currentDate, 1));
+    } else if (viewMode === 'month') {
+      setCurrentDate(direction === 'next' ? addMonths(currentDate, 1) : subMonths(currentDate, 1));
+    }
+  };
+
+  // Get unique doctors from appointments
+  const getDoctorsForDate = (date: Date) => {
+    const dayAppointments = getAppointmentsForDate(date);
+    const doctors = [...new Set(dayAppointments.map(apt => apt.veterinarian))];
+    return doctors.length > 0 ? doctors : ['J Han', 'J Lee']; // Default doctors if no appointments
+  };
+
+  const getAppointmentsForDoctorAndTime = (date: Date, doctor: string, time: string) => {
+    return appointments.filter(appointment => 
+      isSameDay(new Date(appointment.date), date) &&
+      appointment.veterinarian === doctor &&
+      appointment.time === time
+    );
+  };
+  const handleYearChange = (year: number) => {
+    setCurrentDate(setYear(currentDate, year));
+  };
+
+  const handleMonthChange = (month: number) => {
+    setCurrentDate(setMonth(currentDate, month));
+  };
+
+  const handleDragStart = (e: React.DragEvent, appointment: Appointment) => {
+    setDraggedAppointment(appointment);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.currentTarget.outerHTML);
+    e.currentTarget.style.opacity = '0.5';
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    e.currentTarget.style.opacity = '1';
+    setDraggedAppointment(null);
+    setDragOverSlot(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDragEnter = (e: React.DragEvent, date: Date, time: string, doctor?: string) => {
+    e.preventDefault();
+    setDragOverSlot({ date, time, doctor });
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    // Only clear drag over if we're leaving the drop zone completely
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverSlot(null);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetDate: Date, targetTime: string, targetDoctor?: string) => {
+    e.preventDefault();
+    setDragOverSlot(null);
+
+    if (!draggedAppointment) return;
+
+    const newDate = format(targetDate, 'yyyy-MM-dd');
+    const newVeterinarian = targetDoctor || draggedAppointment.veterinarian;
+
+    // Don't update if dropping in the same slot
+    if (draggedAppointment.date === newDate && 
+        draggedAppointment.time === targetTime && 
+        draggedAppointment.veterinarian === newVeterinarian) {
+      return;
+    }
+
+    // Check if target slot is already occupied
+    const existingAppointment = appointments.find(apt => 
+      apt.date === newDate && 
+      apt.time === targetTime && 
+      apt.veterinarian === newVeterinarian &&
+      apt.id !== draggedAppointment.id
+    );
+
+    if (existingAppointment) {
+      alert('This time slot is already occupied. Please choose a different slot.');
+      return;
+    }
+
+    try {
+      const updatedAppointment = await appointmentsAPI.update(draggedAppointment.id, {
+        ...draggedAppointment,
+        date: newDate,
+        time: targetTime,
+        veterinarian: newVeterinarian
+      });
+      
+      onAppointmentUpdated?.(updatedAppointment);
+    } catch (error) {
+      console.error('Failed to update appointment:', error);
+      alert('Failed to move appointment. Please try again.');
+    }
+  };
+
+  const selectedYear = getYear(currentDate);
+  const selectedMonth = getMonth(currentDate);
+
+  const getDateRange = () => {
+    if (viewMode === 'day') {
+      return [currentDate];
+    } else if (viewMode === 'week') {
+      const start = startOfWeek(currentDate, { weekStartsOn: 0 });
+      const end = endOfWeek(currentDate, { weekStartsOn: 0 });
+      return eachDayOfInterval({ start, end });
+    } else if (viewMode === 'month') {
+      const start = startOfMonth(currentDate);
+      const end = endOfMonth(currentDate);
+      return eachDayOfInterval({ start, end });
+    }
+    return [];
+  };
+
+  const getAppointmentsForDate = (date: Date) => {
+    return appointments.filter(appointment => 
+      isSameDay(new Date(appointment.date), date)
+    ).sort((a, b) => a.time.localeCompare(b.time));
+  };
+
+  const getHeaderTitle = () => {
+    if (viewMode === 'day') {
+      return format(currentDate, 'EEEE, MMMM do, yyyy');
+    } else if (viewMode === 'week') {
+      const start = startOfWeek(currentDate, { weekStartsOn: 0 });
+      const end = endOfWeek(currentDate, { weekStartsOn: 0 });
+      return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
+    } else if (viewMode === 'month') {
+      return format(currentDate, 'MMMM yyyy');
+    }
+    return '';
+  };
+
+  const timeSlots = generateTimeSlots();
+
+  const renderDayView = () => {
+    const doctors = getDoctorsForDate(currentDate);
+    
+    const getDoctorAppointmentCount = (doctor: string) => {
+      return appointments.filter(appointment => 
+        isSameDay(new Date(appointment.date), currentDate) &&
+        appointment.veterinarian === doctor &&
+        appointment.status === 'scheduled'
+      ).length;
+    };
+    
+    return (
+      <div className="bg-white rounded-lg border border-gray-200">
+        <div className={`grid gap-0`} style={{ gridTemplateColumns: `2fr repeat(${doctors.length}, 1fr)` }}>
+          {/* Time column */}
+          <div className="border-r border-gray-200">
+            <div className="h-12 border-b border-gray-200 bg-gray-50 flex items-center justify-center">
+              <span className="text-sm font-medium text-gray-600">Time</span>
+            </div>
+            {timeSlots.map((time) => (
+              <div key={time} className="h-16 border-b border-gray-100 flex items-center justify-center">
+                <span className="text-sm text-gray-500">{time}</span>
+              </div>
+            ))}
+          </div>
+          
+          {/* Doctor columns */}
+          {doctors.map((doctor) => (
+            <div key={doctor} className="border-r border-gray-200 last:border-r-0 relative">
+              <div className="h-12 border-b border-gray-200 bg-gray-50 flex flex-col items-center justify-center">
+                <span className="text-xs font-medium text-gray-600">
+                  Dr. {doctor}
+                </span>
+                <span className="text-xs text-teal-600 font-medium">
+                  {getDoctorAppointmentCount(doctor)} appointments
+                </span>
+              </div>
+              
+              {timeSlots.map((time) => {
+                const doctorAppointments = getAppointmentsForDoctorAndTime(currentDate, doctor, time);
+                const isDropTarget = dragOverSlot?.date && 
+                  isSameDay(dragOverSlot.date, currentDate) && 
+                  dragOverSlot.time === time && 
+                  dragOverSlot.doctor === doctor;
+                
+                return (
+                  <div 
+                    key={time} 
+                    className={`h-16 border-b border-gray-100 p-1 transition-colors ${
+                      isDropTarget ? 'bg-teal-100 border-teal-300' : ''
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragEnter={(e) => handleDragEnter(e, currentDate, time, doctor)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, currentDate, time, doctor)}
+                  >
+                    <div className="space-y-1 max-h-full overflow-y-auto">
+                      {doctorAppointments.map((appointment) => (
+                        <div
+                          key={appointment.id}
+                          className={`bg-blue-50 border border-blue-200 rounded p-2 cursor-move hover:bg-blue-100 transition-colors ${
+                            draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
+                          }`}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, appointment)}
+                          onDragEnd={handleDragEnd}
+                          onClick={() => onAppointmentClick(appointment)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-blue-900 truncate">
+                                {appointment.patient?.name}
+                              </p>
+                              <p className="text-xs text-blue-700 truncate">
+                                {appointment.reason.substring(0, 15)}...
+                              </p>
+                            </div>
+                            <span className={`px-1 py-0.5 rounded text-xs ml-1 ${getStatusColor(appointment.status)}`}>
+                              {appointment.status.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {doctorAppointments.length > 1 && (
+                        <div className="text-xs text-gray-500 text-center">
+                          {doctorAppointments.length} appts
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderWeekView = () => {
+    const weekDays = getDateRange();
+    
+    return (
+      <div className="bg-white rounded-lg border border-gray-200">
+        <div className="grid grid-cols-8 gap-0">
+          {/* Time column */}
+          <div className="border-r border-gray-200">
+            <div className="h-12 border-b border-gray-200 bg-gray-50"></div>
+            {timeSlots.map((time) => (
+              <div key={time} className="h-16 border-b border-gray-100 flex items-center justify-center">
+                <span className="text-sm text-gray-500">{time}</span>
+              </div>
+            ))}
+          </div>
+          
+          {/* Day columns */}
+          {weekDays.map((day) => {
+            const dayAppointments = getAppointmentsForDate(day);
+            return (
+              <div key={day.toISOString()} className="border-r border-gray-200 last:border-r-0">
+                <div className="h-12 border-b border-gray-200 bg-gray-50 flex flex-col items-center justify-center">
+                  <span className="text-xs font-medium text-gray-600">
+                    {format(day, 'EEE')}
+                  </span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {format(day, 'd')}
+                  </span>
+                </div>
+                
+                {timeSlots.map((time) => {
+                  const slotAppointments = dayAppointments.filter(apt => apt.time === time);
+                  const isDropTarget = dragOverSlot?.date && 
+                    isSameDay(dragOverSlot.date, day) && 
+                    dragOverSlot.time === time;
+                  
+                  return (
+                    <div 
+                      key={time} 
+                      className={`h-16 border-b border-gray-100 p-1 transition-colors ${
+                        isDropTarget ? 'bg-teal-100 border-teal-300' : ''
+                      }`}
+                      onDragOver={handleDragOver}
+                      onDragEnter={(e) => handleDragEnter(e, day, time)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, day, time)}
+                    >
+                      <div className="space-y-1 max-h-full overflow-y-auto">
+                        {slotAppointments.map((appointment) => (
+                          <div
+                            key={appointment.id}
+                            className={`bg-blue-50 border border-blue-200 rounded p-1 cursor-move hover:bg-blue-100 transition-colors ${
+                              draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
+                            }`}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, appointment)}
+                            onDragEnd={handleDragEnd}
+                            onClick={() => onAppointmentClick(appointment)}
+                          >
+                            <p className="text-xs font-medium text-blue-900 truncate">
+                              {appointment.patient?.name}
+                            </p>
+                          </div>
+                        ))}
+                        {slotAppointments.length > 1 && (
+                          <div className="text-xs text-gray-400 text-center">
+                            +{slotAppointments.length - 1}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderMonthView = () => {
+    const monthDays = getDateRange();
+    const startDate = startOfMonth(currentDate);
+    const firstDayOfWeek = getDay(startDate);
+    
+    // Add empty cells for days before the first day of the month
+    const emptyCells = Array.from({ length: firstDayOfWeek }, (_, i) => (
+      <div key={`empty-${i}`} className="h-32 border border-gray-200 bg-gray-50"></div>
+    ));
+    
+    return (
+      <div className="bg-white rounded-lg border border-gray-200">
+        {/* Week day headers */}
+        <div className="grid grid-cols-7 gap-0">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+            <div key={day} className="h-12 border-b border-gray-200 bg-gray-50 flex items-center justify-center">
+              <span className="text-sm font-medium text-gray-600">{day}</span>
+            </div>
+          ))}
+        </div>
+        
+        {/* Calendar grid */}
+        <div className="grid grid-cols-7 gap-0">
+          {emptyCells}
+          {monthDays.map((day) => {
+            const dayAppointments = getAppointmentsForDate(day);
+            const isToday = isSameDay(day, new Date());
+            
+            return (
+              <div 
+                key={day.toISOString()} 
+                className="h-32 border border-gray-200 p-2 overflow-y-auto cursor-pointer hover:bg-gray-50 transition-colors"
+                onClick={() => onDayClick?.(day)}
+              >
+                <div className={`text-sm font-medium mb-2 ${
+                  isToday ? 'text-blue-600' : 'text-gray-900'
+                }`}>
+                  {format(day, 'd')}
+                </div>
+                
+                <div className="space-y-1">
+                  {dayAppointments.slice(0, 3).map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className={`bg-blue-50 border border-blue-200 rounded p-1 cursor-move hover:bg-blue-100 transition-colors ${
+                        draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
+                      }`}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, appointment)}
+                      onDragEnd={handleDragEnd}
+                      onClick={() => onAppointmentClick(appointment)}
+                    >
+                      <p className="text-xs font-medium text-blue-900 truncate">
+                        {appointment.time} - {appointment.patient?.name}
+                      </p>
+                    </div>
+                  ))}
+                  {dayAppointments.length > 3 && (
+                    <div className="text-xs text-gray-500">
+                      +{dayAppointments.length - 3} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Calendar Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => navigateDate('prev')}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          
+          <div className="flex items-center space-x-3">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {getHeaderTitle()}
+            </h2>
+            
+            {/* Year and Month Selectors */}
+            <div className="flex items-center space-x-2">
+              <select
+                value={selectedMonth}
+                onChange={(e) => handleMonthChange(parseInt(e.target.value))}
+                className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
+              >
+                {monthOptions.map((month) => (
+                  <option key={month.value} value={month.value}>
+                    {month.label}
+                  </option>
+                ))}
+              </select>
+              
+              <select
+                value={selectedYear}
+                onChange={(e) => handleYearChange(parseInt(e.target.value))}
+                className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
+              >
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <button
+            onClick={() => navigateDate('next')}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ChevronRight className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+        
+        <button
+          onClick={() => setCurrentDate(new Date())}
+          className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          Today
+        </button>
+      </div>
+
+      {/* Calendar Content */}
+      {viewMode === 'day' && renderDayView()}
+      {viewMode === 'week' && renderWeekView()}
+      {viewMode === 'month' && renderMonthView()}
+    </div>
+  );
+};
+
+export default CalendarView;
