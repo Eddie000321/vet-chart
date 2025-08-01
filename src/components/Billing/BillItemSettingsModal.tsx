@@ -19,7 +19,7 @@ const BillItemSettingsModal: React.FC<BillItemSettingsModalProps> = ({
   onSave, 
   currentItems 
 }) => {
-  const [items, setItems] = useState<ConfigurableBillItem[]>(currentItems);
+  const [items, setItems] = useState<ConfigurableBillItem[]>([]);
   const [editingItem, setEditingItem] = useState<ConfigurableBillItem | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -28,6 +28,61 @@ const BillItemSettingsModal: React.FC<BillItemSettingsModalProps> = ({
     category: ''
   });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Initialize with current items or sample items if none exist
+    if (currentItems.length > 0) {
+      setItems(currentItems);
+    } else {
+      // Add sample configured items
+      const sampleItems: ConfigurableBillItem[] = [
+        // Examination
+        { id: '1', name: 'Annual Wellness Exam', price: 85.00, category: 'Examination' },
+        { id: '2', name: 'Senior Pet Comprehensive Exam', price: 95.00, category: 'Examination' },
+        { id: '3', name: 'Puppy Wellness Package', price: 120.00, category: 'Examination' },
+        { id: '4', name: 'Emergency Visit', price: 150.00, category: 'Emergency' },
+        
+        // Vaccination
+        { id: '5', name: 'Rabies Vaccination', price: 35.00, category: 'Vaccination' },
+        { id: '6', name: 'DHPP Vaccination', price: 40.00, category: 'Vaccination' },
+        { id: '7', name: 'Bordetella Vaccination', price: 30.00, category: 'Vaccination' },
+        { id: '8', name: 'Feline Distemper (FVRCP)', price: 38.00, category: 'Vaccination' },
+        
+        // Surgery
+        { id: '9', name: 'Spay Surgery (Small Dog)', price: 250.00, category: 'Surgery' },
+        { id: '10', name: 'Neuter Surgery (Cat)', price: 180.00, category: 'Surgery' },
+        { id: '11', name: 'Laceration Repair', price: 150.00, category: 'Surgery' },
+        { id: '12', name: 'Tumor Removal', price: 350.00, category: 'Surgery' },
+        
+        // Dental
+        { id: '13', name: 'Dental Cleaning', price: 180.00, category: 'Dental' },
+        { id: '14', name: 'Dental X-rays', price: 25.00, category: 'Dental' },
+        { id: '15', name: 'Tooth Extraction', price: 75.00, category: 'Dental' },
+        { id: '16', name: 'Dental Anesthesia', price: 65.00, category: 'Dental' },
+        
+        // Laboratory
+        { id: '17', name: 'Heartworm Test', price: 45.00, category: 'Laboratory' },
+        { id: '18', name: 'Blood Chemistry Panel', price: 85.00, category: 'Laboratory' },
+        { id: '19', name: 'Complete Blood Count (CBC)', price: 55.00, category: 'Laboratory' },
+        { id: '20', name: 'Thyroid Function Test', price: 65.00, category: 'Laboratory' },
+        { id: '21', name: 'Urinalysis', price: 35.00, category: 'Laboratory' },
+        
+        // Medication
+        { id: '22', name: 'Pain Medication (5-day supply)', price: 28.00, category: 'Medication' },
+        { id: '23', name: 'Antibiotic Injection', price: 22.00, category: 'Medication' },
+        { id: '24', name: 'Flea/Tick Prevention (Monthly)', price: 45.00, category: 'Medication' },
+        { id: '25', name: 'Joint Supplement (30-day supply)', price: 35.00, category: 'Medication' },
+        
+        // Other
+        { id: '26', name: 'Microchip Implantation', price: 55.00, category: 'Other' },
+        { id: '27', name: 'Nail Trim', price: 15.00, category: 'Grooming' },
+        { id: '28', name: 'Elizabethan Collar', price: 15.00, category: 'Other' },
+        { id: '29', name: 'Deworming Treatment', price: 25.00, category: 'Medication' },
+        { id: '30', name: 'Ear Cleaning', price: 20.00, category: 'Grooming' }
+      ];
+      setItems(sampleItems);
+    }
+  }, [currentItems]);
 
   const categories = [
     'Examination',

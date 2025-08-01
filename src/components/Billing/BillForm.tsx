@@ -226,6 +226,22 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
     setItems([...items, newItem]);
   };
 
+  const addConfiguredItem = () => {
+    const newItem: BillItem = {
+      id: Date.now().toString(),
+      description: '',
+      quantity: 1,
+      unitPrice: 0,
+      totalPrice: 0
+    };
+    const newIndex = items.length;
+    setItems([...items, newItem]);
+    // Automatically open the quick add dropdown for the new item
+    setTimeout(() => {
+      setShowQuickAdd(newIndex);
+    }, 100);
+  };
+
   const removeItem = (index: number) => {
     if (items.length > 1) {
       setItems(items.filter((_, i) => i !== index));
@@ -421,14 +437,24 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Bill Items</h3>
-              <button
-                type="button"
-                onClick={addItem}
-                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors text-sm"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Item</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg transition-colors text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Blank Item</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={addConfiguredItem}
+                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors text-sm"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>Add Configured Item</span>
+                </button>
+              </div>
             </div>
 
             <div className="space-y-3">
