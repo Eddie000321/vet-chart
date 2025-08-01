@@ -103,33 +103,6 @@ const BillItemSettingsModal: React.FC<BillItemSettingsModalProps> = ({
     }
   };
 
-  const handleAddPresets = () => {
-    const presetItems: ConfigurableBillItem[] = [
-      { id: 'preset-1', name: 'Annual Wellness Exam', price: 85.00, category: 'Examination' },
-      { id: 'preset-2', name: 'Rabies Vaccination', price: 35.00, category: 'Vaccination' },
-      { id: 'preset-3', name: 'DHPP Vaccination', price: 40.00, category: 'Vaccination' },
-      { id: 'preset-4', name: 'Heartworm Test', price: 45.00, category: 'Laboratory' },
-      { id: 'preset-5', name: 'Dental Cleaning', price: 180.00, category: 'Dental' },
-      { id: 'preset-6', name: 'Dental X-rays', price: 25.00, category: 'Dental' },
-      { id: 'preset-7', name: 'Spay/Neuter Surgery', price: 250.00, category: 'Surgery' },
-      { id: 'preset-8', name: 'Microchip Implantation', price: 55.00, category: 'Other' },
-      { id: 'preset-9', name: 'Emergency Visit Fee', price: 150.00, category: 'Emergency' },
-      { id: 'preset-10', name: 'Blood Chemistry Panel', price: 85.00, category: 'Laboratory' }
-    ];
-
-    // Only add presets that don't already exist
-    const existingNames = items.map(item => item.name.toLowerCase());
-    const newPresets = presetItems.filter(preset => 
-      !existingNames.includes(preset.name.toLowerCase())
-    );
-
-    if (newPresets.length > 0) {
-      setItems(prev => [...prev, ...newPresets]);
-    } else {
-      alert('All preset items already exist');
-    }
-  };
-
   const getCategoryColor = (category: string) => {
     const colors = {
       'Examination': 'bg-blue-100 text-blue-700',
@@ -190,12 +163,6 @@ const BillItemSettingsModal: React.FC<BillItemSettingsModalProps> = ({
                 Configured Items ({items.length})
               </h3>
               <div className="flex space-x-2">
-                <button
-                  onClick={handleAddPresets}
-                  className="px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                >
-                  Add Presets
-                </button>
                 <button
                   onClick={() => setShowAddForm(true)}
                   className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors text-sm"
