@@ -28,8 +28,6 @@ const WeeklyScheduleChart: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
-  const [draggedAppointment, setDraggedAppointment] = useState<Appointment | null>(null);
-  const [dragOverSlot, setDragOverSlot] = useState<{ date: Date; time: string } | null>(null);
   const { generateTimeSlots } = useBusinessHours();
   const { user } = useAuth();
 
@@ -94,96 +92,6 @@ const WeeklyScheduleChart: React.FC = () => {
 
   const handleAppointmentClick = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
-  };
-
-  const handleDragStart = (e: React.DragEvent, appointment: Appointment) => {
-    setDraggedAppointment(appointment);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', appointment.id);
-    (e.currentTarget as HTMLElement).style.opacity = '0.5';
-  };
-
-  const handleDragEnd = (e: React.DragEvent) => {
-    (e.currentTarget as HTMLElement).style.opacity = '1';
-    setDraggedAppointment(null);
-    setDragOverSlot(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDragEnter = (e: React.DragEvent, date: Date, time: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverSlot({ date, time });
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Only clear drag over if we're leaving the drop zone completely
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = e.clientX;
-    const y = e.clientY;
-    
-    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-      setDragOverSlot(null);
-    }
-  };
-
-  const handleDrop = async (e: React.DragEvent, targetDate: Date, targetTime: string) => {
-    e.preventDefault();
-    setDragOverSlot(null);
-
-    if (!draggedAppointment) return;
-
-    const newDate = format(targetDate, 'yyyy-MM-dd');
-    const doctorName = `${user?.firstName} ${user?.lastName}`;
-
-    // Don't update if dropping in the same slot
-    if (draggedAppointment.date === newDate && draggedAppointment.time === targetTime) {
-      return;
-    }
-
-    // Check if target slot is already occupied by another appointment
-    const existingAppointment = appointments.find(apt => 
-      apt.date === newDate && 
-      apt.time === targetTime && 
-      apt.veterinarian === doctorName &&
-      apt.id !== draggedAppointment.id
-    );
-
-    if (existingAppointment) {
-      alert('This time slot is already occupied. Please choose a different slot.');
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/appointments/${draggedAppointment.id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ...draggedAppointment,
-          date: newDate,
-          time: targetTime
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update appointment');
-      }
-      
-      // Refresh appointments
-      fetchAppointments();
-    } catch (error) {
-      console.error('Failed to update appointment:', error);
-      alert('Failed to move appointment. Please try again.');
-    }
   };
 
   const closeModal = () => {
@@ -272,30 +180,16 @@ const WeeklyScheduleChart: React.FC = () => {
                 {/* Day columns */}
                 {weekDays.map((day) => {
                   const appointment = getAppointmentForTimeSlot(day, time);
-                  const isDropTarget = dragOverSlot?.date && 
-                    isSameDay(dragOverSlot.date, day) && 
-                    dragOverSlot.time === time;
                   
                   return (
                     <div 
                       key={`${day.toISOString()}-${time}`} 
-                      className={`p-1 border-r border-gray-200 last:border-r-0 h-12 transition-colors ${
-                        isDropTarget ? 'bg-teal-100 border-2 border-teal-300 border-dashed' : ''
-                      }`}
-                      onDragOver={handleDragOver}
-                      onDragEnter={(e) => handleDragEnter(e, day, time)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, day, time)}
+                      className="p-1 border-r border-gray-200 last:border-r-0 h-12"
                     >
                       {appointment && (
                         <div className="h-full relative group select-none">
                           <div 
-                            className={`h-full w-full rounded ${getStatusColor(appointment.status)} opacity-90 hover:opacity-100 transition-all cursor-move shadow-sm hover:shadow-md ${
-                              draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
-                            }`}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, appointment)}
-                            onDragEnd={handleDragEnd}
+                            className={`h-full w-full rounded ${getStatusColor(appointment.status)} opacity-90 hover:opacity-100 transition-all cursor-pointer shadow-sm hover:shadow-md`}
                             onClick={() => handleAppointmentClick(appointment)}
                             title={`${appointment.patient?.name} - ${appointment.reason.substring(0, 50)}...`}
                           >
@@ -321,13 +215,6 @@ const WeeklyScheduleChart: React.FC = () => {
                           </div>
                         </div>
                       )}
-                      
-                      {/* Drop zone indicator when dragging */}
-                      {isDropTarget && !appointment && (
-                        <div className="h-full w-full flex items-center justify-center">
-                          <div className="text-teal-600 text-xs font-medium">Drop here</div>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -339,10 +226,6 @@ const WeeklyScheduleChart: React.FC = () => {
 
       {/* Legend */}
       <div className="flex items-center justify-center space-x-6 mt-4 pt-4 border-t border-gray-200">
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-gray-300 border border-dashed border-gray-400 rounded"></div>
-          <span className="text-xs text-gray-600">Drop Zone</span>
-        </div>
         <div className="flex items-center space-x-2">
           <div className="w-3 h-3 bg-blue-500 rounded"></div>
           <span className="text-xs text-gray-600">Scheduled</span>

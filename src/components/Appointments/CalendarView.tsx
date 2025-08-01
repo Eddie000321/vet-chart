@@ -32,8 +32,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 }) => {
 
   const { generateTimeSlots } = useBusinessHours();
-  const [draggedAppointment, setDraggedAppointment] = useState<Appointment | null>(null);
-  const [dragOverSlot, setDragOverSlot] = useState<{ date: Date; time: string; doctor?: string } | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<string>('all');
 
   // Doctor color mapping
@@ -127,100 +125,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     setCurrentDate(setMonth(currentDate, month));
   };
 
-  const handleDragStart = (e: React.DragEvent, appointment: Appointment) => {
-    setDraggedAppointment(appointment);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', e.currentTarget.outerHTML);
-    e.currentTarget.style.opacity = '0.5';
-  };
-
-  const handleDragEnd = (e: React.DragEvent) => {
-    e.currentTarget.style.opacity = '1';
-    setDraggedAppointment(null);
-    setDragOverSlot(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDragEnter = (e: React.DragEvent, date: Date, time: string, doctor?: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverSlot({ date, time, doctor });
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    // When leaving a drop target, clear the dragOverSlot.
-    // The handleDragEnter of the next target will set it if applicable.
-    setDragOverSlot(null);
-    console.log('DRAG LEAVE: Cleared dragOverSlot');
-  };
-
-  const handleDrop = async (e: React.DragEvent, targetDate: Date, targetTime: string, targetDoctor?: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverSlot(null);
-
-    if (!draggedAppointment) return;
-    console.log('DROP EVENT: Target:', { targetDate, targetTime, targetDoctor, draggedAppointmentId: draggedAppointment.id });
-
-    // Ensure we format the date correctly for the API
-    const newDate = format(targetDate, 'yyyy-MM-dd');
-    const newVeterinarian = targetDoctor || draggedAppointment.veterinarian;
-
-    // Don't update if dropping in the same slot
-    if (draggedAppointment.date === newDate && 
-        draggedAppointment.time === targetTime && 
-        draggedAppointment.veterinarian === newVeterinarian) {
-      return;
-    }
-
-    // Validate that the target time slot exists in business hours
-    const timeSlots = generateTimeSlots();
-    if (!timeSlots.includes(targetTime)) {
-      alert('Invalid time slot. Please drop on a valid time.');
-      return;
-    }
-
-    // Check if target slot is already occupied
-    const existingAppointment = filteredAppointments.find(apt => 
-      apt.date === newDate && 
-      apt.time === targetTime && 
-      apt.veterinarian === newVeterinarian &&
-      apt.id !== draggedAppointment.id
-    );
-
-    if (existingAppointment) {
-      alert('This time slot is already occupied. Please choose a different slot.');
-      return;
-    }
-
-    console.log(`Moving appointment from ${draggedAppointment.date} ${draggedAppointment.time} to ${newDate} ${targetTime}`);
-    
-    try {
-      const updatedAppointment = await appointmentsAPI.update(draggedAppointment.id, {
-        patientId: draggedAppointment.patientId,
-        date: newDate,
-        time: targetTime,
-        duration: draggedAppointment.duration,
-        reason: draggedAppointment.reason,
-        notes: draggedAppointment.notes,
-        status: draggedAppointment.status,
-        veterinarian: newVeterinarian
-      });
-      
-      console.log('Appointment updated successfully:', updatedAppointment);
-      // Optionally, add a success message here for user feedback
-      onAppointmentUpdated?.(updatedAppointment);
-    } catch (error) {
-      console.error('Failed to update appointment:', error);
-      alert('Failed to move appointment. Please try again.');
-    }
-  };
-
   const selectedYear = getYear(currentDate);
   const selectedMonth = getMonth(currentDate);
 
@@ -300,25 +204,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({
               
               {timeSlots.map((time) => {
                 const doctorAppointments = getAppointmentsForDoctorAndTime(currentDate, doctor, time);
-                const isDropTarget = dragOverSlot?.date && 
-                  isSameDay(dragOverSlot.date, currentDate) && 
-                  dragOverSlot.time === time && 
-                  dragOverSlot.doctor === doctor;
                 
                 return (
                   <div 
                     key={time} 
-                    className={`h-16 border-b border-gray-100 p-1 transition-colors ${
-                      isDropTarget ? 'bg-teal-100 border-teal-300' : ''
-                    } relative overflow-hidden`}
-                    onDragOver={handleDragOver}
-                    onDragEnter={(e) => handleDragEnter(e, currentDate, time, doctor)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, currentDate, time, doctor)}
-                    data-day={format(currentDate, 'yyyy-MM-dd')}
-                    data-time={time}
-                    data-doctor={doctor}
-                    data-appointment-id={appointment.id} // Add data attribute for debugging
+                    className="h-16 border-b border-gray-100 p-1 relative overflow-hidden"
                   >
                     <div className="space-y-1 max-h-full overflow-y-auto relative z-10">
                       {doctorAppointments.map((appointment) => {
@@ -326,13 +216,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                         return (
                           <div
                             key={appointment.id}
-                            className={`${doctorColor.bgLight} border ${doctorColor.border} rounded p-2 cursor-move hover:shadow-md transition-all ${
-                              draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
-                            } select-none`}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, appointment)}
-                            onDragEnd={handleDragEnd}
+                            className={`${doctorColor.bgLight} border ${doctorColor.border} rounded p-2 cursor-pointer hover:shadow-md transition-all`}
                             onClick={() => onAppointmentClick(appointment)}
+                            title={`${appointment.patient?.name} - ${appointment.reason}`}
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1 min-w-0">
@@ -356,13 +242,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                         </div>
                       )}
                     </div>
-                    
-                    {/* Drop zone indicator overlay */}
-                    {isDropTarget && doctorAppointments.length === 0 && (
-                      <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-teal-400 rounded bg-teal-50 bg-opacity-75 z-20">
-                        <span className="text-xs text-teal-600 font-medium">Drop here</span>
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -405,22 +284,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                 
                 {timeSlots.map((time) => {
                   const slotAppointments = dayAppointments.filter(apt => apt.time === time);
-                  const isDropTarget = dragOverSlot?.date && 
-                    isSameDay(dragOverSlot.date, day) && 
-                    dragOverSlot.time === time;
                   
                   return (
                     <div 
                       key={time} 
-                      className={`h-16 border-b border-gray-100 p-1 transition-all duration-200 ${
-                        isDropTarget ? 'bg-teal-100 border-teal-300' : ''
-                      } relative`}
-                      onDragOver={handleDragOver}
-                      onDragEnter={(e) => handleDragEnter(e, day, time)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, day, time)}
-                      data-day={format(day, 'yyyy-MM-dd')}
-                      data-time={time}
+                      className="h-16 border-b border-gray-100 p-1 relative"
                     >
                       <div className="space-y-1 max-h-full overflow-y-auto relative z-10">
                         {slotAppointments.map((appointment) => {
@@ -428,15 +296,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                           return (
                             <div
                               key={appointment.id}
-                              className={`${doctorColor.bgLight} border ${doctorColor.border} rounded p-1 cursor-move hover:shadow-md transition-all ${
-                                draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
-                              } select-none`}
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, appointment)}
-                              onDragEnd={handleDragEnd}
+                              className={`${doctorColor.bgLight} border ${doctorColor.border} rounded p-1 cursor-pointer hover:shadow-md transition-all`}
                               onClick={() => onAppointmentClick(appointment)}
-                              data-appointment-id={appointment.id}
-                              data-doctor={appointment.veterinarian} // Add doctor data attribute
+                              title={`${appointment.patient?.name} - ${appointment.reason}`}
                             >
                               <p className={`text-xs font-medium ${doctorColor.text} truncate`}>
                                 {appointment.patient?.name}
@@ -457,13 +319,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                           </div>
                         )}
                       </div>
-                      
-                      {/* Drop zone indicator overlay */}
-                      {isDropTarget && slotAppointments.length === 0 && (
-                        <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-teal-400 rounded bg-teal-50 bg-opacity-75 z-20">
-                          <span className="text-xs text-teal-600 font-medium">Drop here</span>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -473,15 +328,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
       </div>
     );
-    
-    // Add visual feedback for successful drops
-    const showSuccessMessage = (message: string) => {
-      const toast = document.createElement('div');
-      toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      toast.textContent = message;
-      document.body.appendChild(toast);
-      setTimeout(() => document.body.removeChild(toast), 3000);
-    };
   };
 
   const renderMonthView = () => {
@@ -530,13 +376,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                     return (
                       <div
                         key={appointment.id}
-                        className={`${doctorColor.bgLight} border ${doctorColor.border} rounded p-1 cursor-move hover:shadow-md transition-all ${
-                          draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
-                        } select-none`}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, appointment)}
-                        onDragEnd={handleDragEnd}
+                        className={`${doctorColor.bgLight} border ${doctorColor.border} rounded p-1 cursor-pointer hover:shadow-md transition-all`}
                         onClick={() => onAppointmentClick(appointment)}
+                        title={`${appointment.patient?.name} - ${appointment.reason}`}
                       >
                         <p className={`text-xs font-medium ${doctorColor.text} truncate`}>
                           {appointment.time} - {appointment.patient?.name}
@@ -645,24 +487,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       {viewMode === 'day' && renderDayView()}
       {viewMode === 'week' && renderWeekView()}
       {viewMode === 'month' && renderMonthView()}
-
-      {/* Doctor Color Legend */}
-      {viewMode === 'week' && selectedDoctor === 'all' && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="flex items-center justify-center space-x-6">
-            <span className="text-xs font-medium text-gray-600">Doctors:</span>
-            {availableDoctors.map((doctor) => {
-              const doctorColor = getDoctorColor(doctor);
-              return (
-                <div key={doctor} className="flex items-center space-x-2">
-                  <div className={`w-3 h-3 ${doctorColor.bg} rounded`}></div>
-                  <span className="text-xs text-gray-600">Dr. {doctor}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
