@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { X, Search, ChevronDown, Plus, Trash2, Zap } from 'lucide-react';
 import { Bill, BillItem, Owner, Patient } from '../../types';
 import { billsAPI, ownersAPI, patientsAPI } from '../../services/api';
+import { ConfigurableBillItem } from './BillItemSettingsModal';
 
 interface BillFormProps {
   onClose: () => void;
   onBillAdded: (bill: Bill) => void;
   editingBill?: Bill | null;
+  configurableItems?: ConfigurableBillItem[];
 }
 
-const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill }) => {
+const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, configurableItems = [] }) => {
   const [formData, setFormData] = useState({
     ownerId: editingBill?.ownerId || '',
     patientId: editingBill?.patientId || '',
@@ -37,6 +39,7 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill }
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showQuickAdd, setShowQuickAdd] = useState<number | null>(null);
 
   useEffect(() => {
     fetchOwners();
@@ -207,6 +210,18 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill }
     if (items.length > 1) {
       setItems(items.filter((_, i) => i !== index));
     }
+  };
+
+  const handleQuickAddItem = (configurableItem: ConfigurableBillItem, index: number) => {
+    const newItems = [...items];
+    newItems[index] = {
+      ...newItems[index],
+      description: configurableItem.name,
+      unitPrice: configurableItem.price,
+      totalPrice: newItems[index].quantity * configurableItem.price
+    };
+    setItems(newItems);
+    setShowQuickAdd(null);
   };
 
   const calculateSubtotal = () => {
@@ -392,18 +407,59 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill }
             <div className="space-y-3">
               {items.map((item, index) => (
                 <div key={item.id} className="grid grid-cols-12 gap-3 items-end">
-                  <div className="col-span-5">
+                  <div className="col-span-5 relative">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Description
                     </label>
-                    <input
-                      type="text"
-                      value={item.description}
-                      onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                      placeholder="Service or product description"
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    />
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={item.description}
+                        onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                        placeholder="Service or product description"
+                        required
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      />
+                      {configurableItems.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowQuickAdd(showQuickAdd === index ? null : index)}
+                          className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-colors"
+                          title="Quick add from configured items"
+                        >
+                          <Zap className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Quick Add Dropdown */}
+                    {showQuickAdd === index && configurableItems.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {configurableItems.map((configItem) => (
+                          <div
+                            key={configItem.id}
+                            onClick={() => handleQuickAddItem(configItem, index)}
+                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="font-medium text-gray-900 text-sm">
+                                  {configItem.name}
+                                </div>
+                                {configItem.category && (
+                                  <div className="text-xs text-gray-500">
+                                    {configItem.category}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-sm font-medium text-green-600">
+                                ${configItem.price.toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="col-span-2">

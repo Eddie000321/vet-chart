@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Receipt, Calendar, User, PawPrint, Edit, Trash2, Eye, DollarSign } from 'lucide-react';
+import { Search, Plus, Receipt, Calendar, User, PawPrint, Edit, Trash2, Eye, DollarSign, Settings } from 'lucide-react';
 import { Bill } from '../../types';
 import { billsAPI } from '../../services/api';
 import { format } from 'date-fns';
 import BillForm from './BillForm';
+import BillItemSettingsModal, { ConfigurableBillItem } from './BillItemSettingsModal';
 
 const BillList: React.FC = () => {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -15,9 +16,12 @@ const BillList: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [viewingBill, setViewingBill] = useState<Bill | null>(null);
+  const [showItemSettings, setShowItemSettings] = useState(false);
+  const [configurableItems, setConfigurableItems] = useState<ConfigurableBillItem[]>([]);
 
   useEffect(() => {
     fetchBills();
+    loadConfigurableItems();
   }, []);
 
   useEffect(() => {
@@ -80,6 +84,23 @@ const BillList: React.FC = () => {
   const handleViewBill = (bill: Bill) => {
     setViewingBill(bill);
   };
+
+  const loadConfigurableItems = () => {
+    try {
+      const saved = localStorage.getItem('configurableBillItems');
+      if (saved) {
+        setConfigurableItems(JSON.parse(saved));
+      }
+    } catch (error) {
+      console.error('Failed to load configurable items:', error);
+    }
+  };
+
+  const handleItemSettingsSave = (items: ConfigurableBillItem[]) => {
+    setConfigurableItems(items);
+    setShowItemSettings(false);
+  };
+
   const getStatusColor = (status: Bill['status']) => {
     switch (status) {
       case 'draft':
@@ -116,13 +137,22 @@ const BillList: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Billing</h1>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center space-x-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Create Bill</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShowItemSettings(true)}
+            className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+          >
+            <Settings className="w-4 h-4" />
+            <span>Manage Items</span>
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center space-x-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Bill</span>
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -309,6 +339,7 @@ const BillList: React.FC = () => {
         <BillForm
           onClose={() => setShowForm(false)}
           onBillAdded={handleBillAdded}
+          configurableItems={configurableItems}
         />
       )}
 
@@ -318,6 +349,7 @@ const BillList: React.FC = () => {
           onClose={() => setEditingBill(null)}
           onBillAdded={handleBillUpdated}
           editingBill={editingBill}
+          configurableItems={configurableItems}
         />
       )}
 
@@ -330,6 +362,15 @@ const BillList: React.FC = () => {
             setEditingBill(viewingBill);
             setViewingBill(null);
           }}
+        />
+      )}
+
+      {/* Bill Item Settings Modal */}
+      {showItemSettings && (
+        <BillItemSettingsModal
+          currentItems={configurableItems}
+          onClose={() => setShowItemSettings(false)}
+          onSave={handleItemSettingsSave}
         />
       )}
     </div>
