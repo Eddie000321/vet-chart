@@ -3,6 +3,7 @@ import { Search, Plus, Receipt, Calendar, User, PawPrint, Edit, Trash2, Eye, Dol
 import { Bill } from '../../types';
 import { billsAPI } from '../../services/api';
 import { format } from 'date-fns';
+import BillForm from './BillForm';
 
 const BillList: React.FC = () => {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -11,6 +12,7 @@ const BillList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     fetchBills();
@@ -57,6 +59,11 @@ const BillList: React.FC = () => {
     }
   };
 
+  const handleBillAdded = (newBill: Bill) => {
+    setBills(prev => [newBill, ...prev]);
+    setShowForm(false);
+  };
+
   const getStatusColor = (status: Bill['status']) => {
     switch (status) {
       case 'draft':
@@ -94,6 +101,7 @@ const BillList: React.FC = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Billing</h1>
         <button
+          onClick={() => setShowForm(true)}
           className="flex items-center space-x-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
         >
           <Plus className="w-4 h-4" />
@@ -276,6 +284,14 @@ const BillList: React.FC = () => {
             {searchTerm || statusFilter !== 'all' ? 'Try adjusting your search or filters.' : 'Get started by creating a bill.'}
           </p>
         </div>
+      )}
+
+      {/* Bill Form Modal */}
+      {showForm && (
+        <BillForm
+          onClose={() => setShowForm(false)}
+          onBillAdded={handleBillAdded}
+        />
       )}
     </div>
   );
