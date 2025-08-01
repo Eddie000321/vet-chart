@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Clock, User, PawPrint, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, User, PawPrint, Edit, Trash2, CheckCircle, XCircle, Filter } from 'lucide-react';
 import { Appointment } from '../../types';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, getDay, setMonth, setYear, getMonth, getYear } from 'date-fns';
 import { useBusinessHours } from '../../hooks/useBusinessHours';
@@ -34,6 +34,23 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   const { generateTimeSlots } = useBusinessHours();
   const [draggedAppointment, setDraggedAppointment] = useState<Appointment | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<{ date: Date; time: string; doctor?: string } | null>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState<string>('all');
+
+  // Doctor color mapping
+  const doctorColors = {
+    'J Han': { bg: 'bg-blue-500', bgLight: 'bg-blue-100', border: 'border-blue-200', text: 'text-blue-900' },
+    'J Lee': { bg: 'bg-green-500', bgLight: 'bg-green-100', border: 'border-green-200', text: 'text-green-900' },
+    'Sarah Wilson': { bg: 'bg-purple-500', bgLight: 'bg-purple-100', border: 'border-purple-200', text: 'text-purple-900' },
+    'Michael Brown': { bg: 'bg-orange-500', bgLight: 'bg-orange-100', border: 'border-orange-200', text: 'text-orange-900' }
+  };
+
+  // Get unique doctors from appointments
+  const availableDoctors = [...new Set(appointments.map(apt => apt.veterinarian))].sort();
+
+  // Filter appointments by selected doctor
+  const filteredAppointments = selectedDoctor === 'all' 
+    ? appointments 
+    : appointments.filter(apt => apt.veterinarian === selectedDoctor);
 
   // Generate year options (current year ± 5 years)
   const currentYear = getYear(new Date());
@@ -69,6 +86,15 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     }
   };
 
+  const getDoctorColor = (doctorName: string) => {
+    return doctorColors[doctorName as keyof typeof doctorColors] || {
+      bg: 'bg-gray-500',
+      bgLight: 'bg-gray-100',
+      border: 'border-gray-200',
+      text: 'text-gray-900'
+    };
+  };
+
   const navigateDate = (direction: 'prev' | 'next') => {
     if (viewMode === 'day') {
       setCurrentDate(direction === 'next' ? addDays(currentDate, 1) : subDays(currentDate, 1));
@@ -87,7 +113,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   const getAppointmentsForDoctorAndTime = (date: Date, doctor: string, time: string) => {
-    return appointments.filter(appointment => 
+    return filteredAppointments.filter(appointment => 
       isSameDay(new Date(appointment.date), date) &&
       appointment.veterinarian === doctor &&
       appointment.time === time
@@ -149,7 +175,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     }
 
     // Check if target slot is already occupied
-    const existingAppointment = appointments.find(apt => 
+    const existingAppointment = filteredAppointments.find(apt => 
       apt.date === newDate && 
       apt.time === targetTime && 
       apt.veterinarian === newVeterinarian &&
@@ -195,7 +221,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   const getAppointmentsForDate = (date: Date) => {
-    return appointments.filter(appointment => 
+    return filteredAppointments.filter(appointment => 
       isSameDay(new Date(appointment.date), date)
     ).sort((a, b) => a.time.localeCompare(b.time));
   };
@@ -272,32 +298,35 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                     onDrop={(e) => handleDrop(e, currentDate, time, doctor)}
                   >
                     <div className="space-y-1 max-h-full overflow-y-auto">
-                      {doctorAppointments.map((appointment) => (
-                        <div
-                          key={appointment.id}
-                          className={`bg-blue-50 border border-blue-200 rounded p-2 cursor-move hover:bg-blue-100 transition-colors ${
-                            draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
-                          }`}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, appointment)}
-                          onDragEnd={handleDragEnd}
-                          onClick={() => onAppointmentClick(appointment)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-blue-900 truncate">
-                                {appointment.patient?.name}
-                              </p>
-                              <p className="text-xs text-blue-700 truncate">
-                                {appointment.reason.substring(0, 15)}...
-                              </p>
+                      {doctorAppointments.map((appointment) => {
+                        const doctorColor = getDoctorColor(appointment.veterinarian);
+                        return (
+                          <div
+                            key={appointment.id}
+                            className={`${doctorColor.bgLight} border ${doctorColor.border} rounded p-2 cursor-move hover:shadow-md transition-all ${
+                              draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
+                            }`}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, appointment)}
+                            onDragEnd={handleDragEnd}
+                            onClick={() => onAppointmentClick(appointment)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-xs font-medium ${doctorColor.text} truncate`}>
+                                  {appointment.patient?.name}
+                                </p>
+                                <p className={`text-xs ${doctorColor.text} opacity-75 truncate`}>
+                                  {appointment.reason.substring(0, 15)}...
+                                </p>
+                              </div>
+                              <span className={`px-1 py-0.5 rounded text-xs ml-1 ${getStatusColor(appointment.status)}`}>
+                                {appointment.status.charAt(0).toUpperCase()}
+                              </span>
                             </div>
-                            <span className={`px-1 py-0.5 rounded text-xs ml-1 ${getStatusColor(appointment.status)}`}>
-                              {appointment.status.charAt(0).toUpperCase()}
-                            </span>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {doctorAppointments.length > 1 && (
                         <div className="text-xs text-gray-500 text-center">
                           {doctorAppointments.length} appts
@@ -362,22 +391,28 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                       onDrop={(e) => handleDrop(e, day, time)}
                     >
                       <div className="space-y-1 max-h-full overflow-y-auto">
-                        {slotAppointments.map((appointment) => (
-                          <div
-                            key={appointment.id}
-                            className={`bg-blue-50 border border-blue-200 rounded p-1 cursor-move hover:bg-blue-100 transition-colors ${
-                              draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
-                            }`}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, appointment)}
-                            onDragEnd={handleDragEnd}
-                            onClick={() => onAppointmentClick(appointment)}
-                          >
-                            <p className="text-xs font-medium text-blue-900 truncate">
-                              {appointment.patient?.name}
-                            </p>
-                          </div>
-                        ))}
+                        {slotAppointments.map((appointment) => {
+                          const doctorColor = getDoctorColor(appointment.veterinarian);
+                          return (
+                            <div
+                              key={appointment.id}
+                              className={`${doctorColor.bgLight} border ${doctorColor.border} rounded p-1 cursor-move hover:shadow-md transition-all ${
+                                draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
+                              }`}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, appointment)}
+                              onDragEnd={handleDragEnd}
+                              onClick={() => onAppointmentClick(appointment)}
+                            >
+                              <p className={`text-xs font-medium ${doctorColor.text} truncate`}>
+                                {appointment.patient?.name}
+                              </p>
+                              <p className={`text-xs ${doctorColor.text} opacity-60 truncate`}>
+                                Dr. {appointment.veterinarian}
+                              </p>
+                            </div>
+                          );
+                        })}
                         {slotAppointments.length > 1 && (
                           <div className="text-xs text-gray-400 text-center">
                             +{slotAppointments.length - 1}
@@ -436,22 +471,28 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                 </div>
                 
                 <div className="space-y-1">
-                  {dayAppointments.slice(0, 3).map((appointment) => (
-                    <div
-                      key={appointment.id}
-                      className={`bg-blue-50 border border-blue-200 rounded p-1 cursor-move hover:bg-blue-100 transition-colors ${
-                        draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
-                      }`}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, appointment)}
-                      onDragEnd={handleDragEnd}
-                      onClick={() => onAppointmentClick(appointment)}
-                    >
-                      <p className="text-xs font-medium text-blue-900 truncate">
-                        {appointment.time} - {appointment.patient?.name}
-                      </p>
-                    </div>
-                  ))}
+                  {dayAppointments.slice(0, 3).map((appointment) => {
+                    const doctorColor = getDoctorColor(appointment.veterinarian);
+                    return (
+                      <div
+                        key={appointment.id}
+                        className={`${doctorColor.bgLight} border ${doctorColor.border} rounded p-1 cursor-move hover:shadow-md transition-all ${
+                          draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
+                        }`}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, appointment)}
+                        onDragEnd={handleDragEnd}
+                        onClick={() => onAppointmentClick(appointment)}
+                      >
+                        <p className={`text-xs font-medium ${doctorColor.text} truncate`}>
+                          {appointment.time} - {appointment.patient?.name}
+                        </p>
+                        <p className={`text-xs ${doctorColor.text} opacity-60 truncate`}>
+                          Dr. {appointment.veterinarian}
+                        </p>
+                      </div>
+                    );
+                  })}
                   {dayAppointments.length > 3 && (
                     <div className="text-xs text-gray-500">
                       +{dayAppointments.length - 3} more
@@ -482,6 +523,25 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             <h2 className="text-xl font-semibold text-gray-900">
               {getHeaderTitle()}
             </h2>
+            
+            {/* Doctor Filter */}
+            {viewMode === 'week' && (
+              <div className="flex items-center space-x-2">
+                <Filter className="w-4 h-4 text-gray-500" />
+                <select
+                  value={selectedDoctor}
+                  onChange={(e) => setSelectedDoctor(e.target.value)}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
+                >
+                  <option value="all">All Doctors</option>
+                  {availableDoctors.map((doctor) => (
+                    <option key={doctor} value={doctor}>
+                      Dr. {doctor}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             
             {/* Year and Month Selectors */}
             <div className="flex items-center space-x-2">
@@ -531,6 +591,24 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       {viewMode === 'day' && renderDayView()}
       {viewMode === 'week' && renderWeekView()}
       {viewMode === 'month' && renderMonthView()}
+
+      {/* Doctor Color Legend */}
+      {viewMode === 'week' && selectedDoctor === 'all' && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-center space-x-6">
+            <span className="text-xs font-medium text-gray-600">Doctors:</span>
+            {availableDoctors.map((doctor) => {
+              const doctorColor = getDoctorColor(doctor);
+              return (
+                <div key={doctor} className="flex items-center space-x-2">
+                  <div className={`w-3 h-3 ${doctorColor.bg} rounded`}></div>
+                  <span className="text-xs text-gray-600">Dr. {doctor}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
