@@ -156,6 +156,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     e.stopPropagation();
     // Use a timeout to prevent flickering when moving between child elements
     setTimeout(() => {
+      if (!e.currentTarget) return;
+      
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
       const x = e.clientX;
       const y = e.clientY;
