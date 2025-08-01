@@ -275,6 +275,13 @@ const PatientList: React.FC = () => {
                   <Calendar className="w-3 h-3" />
                   <span>Registered {new Date(patient.createdAt).toLocaleDateString()}</span>
                 </div>
+                
+                {patient.assignedDoctor && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-600 pt-2 border-t border-gray-100">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <span className="font-medium">Assigned: Dr. {patient.assignedDoctor}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}

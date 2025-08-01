@@ -21,7 +21,8 @@ const PatientForm: React.FC<PatientFormProps> = ({ onClose, onPatientAdded, onPa
     weight: editingPatient?.weight?.toString() || '',
     ownerId: editingPatient?.ownerId || preSelectedOwnerId || '',
     weightUnit: editingPatient?.weightUnit || 'lbs' as 'lbs' | 'kg',
-    status: editingPatient?.status || 'active' as 'active' | 'inactive'
+    status: editingPatient?.status || 'active' as 'active' | 'inactive',
+    assignedDoctor: editingPatient?.assignedDoctor || ''
   });
   const [owners, setOwners] = useState<Owner[]>([]);
   const [filteredOwners, setFilteredOwners] = useState<Owner[]>([]);
@@ -318,6 +319,25 @@ const PatientForm: React.FC<PatientFormProps> = ({ onClose, onPatientAdded, onPa
               <option value="inactive">Inactive</option>
             </select>
           </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Assigned Doctor
+            </label>
+            <select
+              name="assignedDoctor"
+              value={formData.assignedDoctor}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              <option value="">Select Doctor (Optional)</option>
+              <option value="J Han">Dr. J Han</option>
+              <option value="J Lee">Dr. J Lee</option>
+              <option value="Sarah Wilson">Dr. Sarah Wilson</option>
+              <option value="Michael Brown">Dr. Michael Brown</option>
+            </select>
+          </div>
+          
           <div className="flex space-x-3 pt-4">
             <button
               type="button"

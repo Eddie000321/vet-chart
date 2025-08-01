@@ -16,7 +16,8 @@ const OwnerForm: React.FC<OwnerFormProps> = ({ onClose, onOwnerAdded, onOwnerUpd
     lastName: editingOwner?.lastName || '',
     email: editingOwner?.email || '',
     phone: editingOwner?.phone || '',
-    address: editingOwner?.address || ''
+    address: editingOwner?.address || '',
+    notes: editingOwner?.notes || ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -140,6 +141,19 @@ const OwnerForm: React.FC<OwnerFormProps> = ({ onClose, onOwnerAdded, onOwnerUpd
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Notes / Memo
+            </label>
+            <textarea
+              name="notes"
+              value={formData.notes}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Add any notes or special instructions about this owner..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+          </div>
           <div className="flex space-x-3 pt-4">
             <button
               type="button"

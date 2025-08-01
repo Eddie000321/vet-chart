@@ -175,6 +175,13 @@ const OwnerList: React.FC = () => {
                     <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                     <span className="break-words">{owner.address}</span>
                   </div>
+                  
+                  {owner.notes && (
+                    <div className="flex items-start space-x-2 text-sm text-gray-600 mt-2 pt-2 border-t border-gray-100">
+                      <div className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0">📝</div>
+                      <span className="break-words italic">{owner.notes}</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="pt-2 border-t border-gray-100">

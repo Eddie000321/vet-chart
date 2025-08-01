@@ -79,6 +79,7 @@ const initDB = async () => {
       email: 'sarah.johnson@email.com',
       phone: '(555) 123-4567',
       address: '123 Oak Street, Springfield, IL 62701',
+      notes: 'Prefers morning appointments. Has two dogs and one cat. Very attentive pet owner.',
       createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days ago
     });
     
@@ -89,6 +90,7 @@ const initDB = async () => {
       email: 'michael.chen@email.com',
       phone: '(555) 234-5678',
       address: '456 Pine Avenue, Springfield, IL 62702',
+      notes: 'Works late hours, prefers evening appointments. Very knowledgeable about pet care.',
       createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString() // 25 days ago
     });
     
@@ -99,6 +101,7 @@ const initDB = async () => {
       email: 'emily.rodriguez@email.com',
       phone: '(555) 345-6789',
       address: '789 Maple Drive, Springfield, IL 62703',
+      notes: 'First-time pet owner. Needs extra guidance and reassurance during visits.',
       createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString() // 20 days ago
     });
     
@@ -109,6 +112,7 @@ const initDB = async () => {
       email: 'david.thompson@email.com',
       phone: '(555) 456-7890',
       address: '321 Elm Street, Springfield, IL 62704',
+      notes: 'Travels frequently for work. Emergency contact is his neighbor Mrs. Smith (555) 999-1234.',
       createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() // 15 days ago
     });
     
@@ -119,6 +123,7 @@ const initDB = async () => {
       email: 'lisa.anderson@email.com',
       phone: '(555) 567-8901',
       address: '654 Cedar Lane, Springfield, IL 62705',
+      notes: 'Senior citizen, may need assistance with pet handling. Very caring and dedicated owner.',
       createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() // 10 days ago
     });
     
@@ -141,6 +146,7 @@ const initDB = async () => {
       weight: 65,
       weightUnit: 'lbs',
       ownerId: owner1Id,
+      assignedDoctor: 'J Han',
       createdAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -154,6 +160,7 @@ const initDB = async () => {
       weight: 8,
       weightUnit: 'lbs',
       ownerId: owner1Id,
+      assignedDoctor: 'J Lee',
       createdAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -167,6 +174,7 @@ const initDB = async () => {
       weight: 75,
       weightUnit: 'lbs',
       ownerId: owner2Id,
+      assignedDoctor: 'J Han',
       createdAt: new Date(Date.now() - 23 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -180,6 +188,7 @@ const initDB = async () => {
       weight: 7,
       weightUnit: 'lbs',
       ownerId: owner3Id,
+      assignedDoctor: 'Sarah Wilson',
       createdAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -193,6 +202,7 @@ const initDB = async () => {
       weight: 70,
       weightUnit: 'lbs',
       ownerId: owner4Id,
+      assignedDoctor: 'J Lee',
       createdAt: new Date(Date.now() - 13 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -206,6 +216,7 @@ const initDB = async () => {
       weight: 45,
       weightUnit: 'lbs',
       ownerId: owner5Id,
+      assignedDoctor: 'Michael Brown',
       createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -219,6 +230,7 @@ const initDB = async () => {
       weight: 0.5,
       weightUnit: 'lbs',
       ownerId: owner3Id,
+      assignedDoctor: 'Sarah Wilson',
       createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -460,7 +472,7 @@ app.get('/api/owners', authenticateToken, async (req, res) => {
 
 app.post('/api/owners', authenticateToken, async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, address } = req.body;
+    const { firstName, lastName, email, phone, address, notes } = req.body;
     
     const newOwner = {
       id: uuidv4(),
@@ -469,6 +481,7 @@ app.post('/api/owners', authenticateToken, async (req, res) => {
       email,
       phone,
       address,
+      notes: notes || '',
       createdAt: new Date().toISOString()
     };
     
@@ -517,7 +530,7 @@ app.delete('/api/owners/:id', authenticateToken, async (req, res) => {
 app.put('/api/owners/:id', authenticateToken, async (req, res) => {
   try {
     const ownerId = req.params.id;
-    const { firstName, lastName, email, phone, address } = req.body;
+    const { firstName, lastName, email, phone, address, notes } = req.body;
     
     const ownerIndex = db.owners.findIndex(o => o.id === ownerId);
     
@@ -531,7 +544,8 @@ app.put('/api/owners/:id', authenticateToken, async (req, res) => {
       lastName,
       email,
       phone,
-      address
+      address,
+      notes: notes || ''
     };
     
     db.owners[ownerIndex] = updatedOwner;
@@ -560,7 +574,7 @@ app.get('/api/patients', authenticateToken, async (req, res) => {
 
 app.post('/api/patients', authenticateToken, async (req, res) => {
   try {
-    const { name, species, breed, age, gender, weight, ownerId, weightUnit } = req.body;
+    const { name, species, breed, age, gender, weight, ownerId, weightUnit, assignedDoctor } = req.body;
     
     const newPatient = {
       id: uuidv4(),
@@ -572,6 +586,7 @@ app.post('/api/patients', authenticateToken, async (req, res) => {
       weight,
       weightUnit: weightUnit || 'lbs',
       ownerId,
+      assignedDoctor: assignedDoctor || '',
       status: 'active',
       createdAt: new Date().toISOString()
     };
@@ -613,7 +628,7 @@ app.get('/api/patients/:id', authenticateToken, async (req, res) => {
 app.put('/api/patients/:id', authenticateToken, async (req, res) => {
   try {
     const patientId = req.params.id;
-    const { name, species, breed, age, gender, weight, ownerId, weightUnit, status } = req.body;
+    const { name, species, breed, age, gender, weight, ownerId, weightUnit, status, assignedDoctor } = req.body;
     
     const patientIndex = db.patients.findIndex(p => p.id === patientId);
     
@@ -631,7 +646,8 @@ app.put('/api/patients/:id', authenticateToken, async (req, res) => {
       weight,
       ownerId,
       weightUnit: weightUnit || 'lbs',
-      status: status || db.patients[patientIndex].status || 'active'
+      status: status || db.patients[patientIndex].status || 'active',
+      assignedDoctor: assignedDoctor || ''
     };
     
     db.patients[patientIndex] = updatedPatient;

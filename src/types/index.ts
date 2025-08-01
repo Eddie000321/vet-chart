@@ -5,6 +5,7 @@ export interface Owner {
   email: string;
   phone: string;
   address: string;
+  notes?: string;
   createdAt: string;
 }
 
@@ -19,6 +20,7 @@ export interface Patient {
   weightUnit?: 'lbs' | 'kg';
   ownerId: string;
   owner?: Owner;
+  assignedDoctor?: string;
   status: 'active' | 'inactive';
   status: 'active' | 'inactive';
   createdAt: string;
