@@ -127,6 +127,92 @@ const initDB = async () => {
       createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() // 10 days ago
     });
     
+    // Additional owners for more comprehensive data
+    const owner6Id = uuidv4();
+    const owner7Id = uuidv4();
+    const owner8Id = uuidv4();
+    const owner9Id = uuidv4();
+    const owner10Id = uuidv4();
+    const owner11Id = uuidv4();
+    const owner12Id = uuidv4();
+    
+    db.owners.push({
+      id: owner6Id,
+      firstName: 'Robert',
+      lastName: 'Martinez',
+      email: 'robert.martinez@email.com',
+      phone: '(555) 678-9012',
+      address: '987 Birch Street, Springfield, IL 62706',
+      notes: 'Works from home, very flexible with appointment times. Has experience with multiple pets.',
+      createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.owners.push({
+      id: owner7Id,
+      firstName: 'Jennifer',
+      lastName: 'Taylor',
+      email: 'jennifer.taylor@email.com',
+      phone: '(555) 789-0123',
+      address: '246 Willow Avenue, Springfield, IL 62707',
+      notes: 'Veterinary technician at another clinic. Very knowledgeable about pet care and medications.',
+      createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.owners.push({
+      id: owner8Id,
+      firstName: 'Mark',
+      lastName: 'Williams',
+      email: 'mark.williams@email.com',
+      phone: '(555) 890-1234',
+      address: '135 Spruce Road, Springfield, IL 62708',
+      notes: 'Recently moved from another state. Previous vet records available upon request.',
+      createdAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.owners.push({
+      id: owner9Id,
+      firstName: 'Amanda',
+      lastName: 'Davis',
+      email: 'amanda.davis@email.com',
+      phone: '(555) 901-2345',
+      address: '579 Poplar Drive, Springfield, IL 62709',
+      notes: 'College student, limited budget. Interested in payment plans and preventive care packages.',
+      createdAt: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.owners.push({
+      id: owner10Id,
+      firstName: 'Christopher',
+      lastName: 'Brown',
+      email: 'christopher.brown@email.com',
+      phone: '(555) 012-3456',
+      address: '864 Hickory Lane, Springfield, IL 62710',
+      notes: 'Breeder with multiple animals. Requires group appointment scheduling and bulk services.',
+      createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.owners.push({
+      id: owner11Id,
+      firstName: 'Nicole',
+      lastName: 'Garcia',
+      email: 'nicole.garcia@email.com',
+      phone: '(555) 123-4567',
+      address: '753 Magnolia Street, Springfield, IL 62711',
+      notes: 'Rescue volunteer, often brings in stray animals. Very compassionate and dedicated to animal welfare.',
+      createdAt: new Date(Date.now() - 75 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.owners.push({
+      id: owner12Id,
+      firstName: 'Kevin',
+      lastName: 'Wilson',
+      email: 'kevin.wilson@email.com',
+      phone: '(555) 234-5678',
+      address: '642 Sycamore Avenue, Springfield, IL 62712',
+      notes: 'Elderly gentleman with mobility issues. May need assistance getting pets in/out of car.',
+      createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
     // Create example patients
     const patient1Id = uuidv4();
     const patient2Id = uuidv4();
@@ -241,6 +327,229 @@ const initDB = async () => {
       createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
     });
     
+    // Additional patients for more comprehensive data
+    const patient8Id = uuidv4();
+    const patient9Id = uuidv4();
+    const patient10Id = uuidv4();
+    const patient11Id = uuidv4();
+    const patient12Id = uuidv4();
+    const patient13Id = uuidv4();
+    const patient14Id = uuidv4();
+    const patient15Id = uuidv4();
+    const patient16Id = uuidv4();
+    const patient17Id = uuidv4();
+    const patient18Id = uuidv4();
+    const patient19Id = uuidv4();
+    const patient20Id = uuidv4();
+    
+    db.patients.push({
+      id: patient8Id,
+      name: 'Rocky',
+      species: 'Dog',
+      breed: 'Bulldog',
+      age: 3,
+      gender: 'Male',
+      weight: 50,
+      weightUnit: 'lbs',
+      ownerId: owner6Id,
+      assignedDoctor: 'J Han',
+      handlingDifficulty: 'medium',
+      status: 'active',
+      createdAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.patients.push({
+      id: patient9Id,
+      name: 'Mittens',
+      species: 'Cat',
+      breed: 'Maine Coon',
+      age: 6,
+      gender: 'Female',
+      weight: 12,
+      weightUnit: 'lbs',
+      ownerId: owner6Id,
+      assignedDoctor: 'J Lee',
+      handlingDifficulty: 'easy',
+      status: 'active',
+      createdAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.patients.push({
+      id: patient10Id,
+      name: 'Spike',
+      species: 'Dog',
+      breed: 'Rottweiler',
+      age: 8,
+      gender: 'Male',
+      weight: 110,
+      weightUnit: 'lbs',
+      ownerId: owner7Id,
+      assignedDoctor: 'Michael Brown',
+      handlingDifficulty: 'hard',
+      status: 'active',
+      createdAt: new Date(Date.now() - 55 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.patients.push({
+      id: patient11Id,
+      name: 'Princess',
+      species: 'Cat',
+      breed: 'Ragdoll',
+      age: 4,
+      gender: 'Female',
+      weight: 10,
+      weightUnit: 'lbs',
+      ownerId: owner8Id,
+      assignedDoctor: 'Sarah Wilson',
+      handlingDifficulty: 'easy',
+      status: 'active',
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.patients.push({
+      id: patient12Id,
+      name: 'Gizmo',
+      species: 'Hamster',
+      breed: 'Syrian Hamster',
+      age: 1,
+      gender: 'Male',
+      weight: 0.3,
+      weightUnit: 'lbs',
+      ownerId: owner9Id,
+      assignedDoctor: 'Sarah Wilson',
+      handlingDifficulty: 'medium',
+      status: 'active',
+      createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.patients.push({
+      id: patient13Id,
+      name: 'Nemo',
+      species: 'Fish',
+      breed: 'Goldfish',
+      age: 2,
+      gender: 'Male',
+      weight: 0.1,
+      weightUnit: 'lbs',
+      ownerId: owner9Id,
+      assignedDoctor: 'Sarah Wilson',
+      handlingDifficulty: 'easy',
+      status: 'active',
+      createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.patients.push({
+      id: patient14Id,
+      name: 'Rex',
+      species: 'Dog',
+      breed: 'German Shepherd',
+      age: 5,
+      gender: 'Male',
+      weight: 80,
+      weightUnit: 'lbs',
+      ownerId: owner10Id,
+      assignedDoctor: 'J Han',
+      handlingDifficulty: 'medium',
+      status: 'active',
+      createdAt: new Date(Date.now() - 85 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.patients.push({
+      id: patient15Id,
+      name: 'Duchess',
+      species: 'Dog',
+      breed: 'Poodle',
+      age: 7,
+      gender: 'Female',
+      weight: 55,
+      weightUnit: 'lbs',
+      ownerId: owner10Id,
+      assignedDoctor: 'J Lee',
+      handlingDifficulty: 'easy',
+      status: 'active',
+      createdAt: new Date(Date.now() - 85 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.patients.push({
+      id: patient16Id,
+      name: 'Shadow',
+      species: 'Cat',
+      breed: 'Black Cat',
+      age: 3,
+      gender: 'Male',
+      weight: 9,
+      weightUnit: 'lbs',
+      ownerId: owner11Id,
+      assignedDoctor: 'J Han',
+      handlingDifficulty: 'medium',
+      status: 'active',
+      createdAt: new Date(Date.now() - 70 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.patients.push({
+      id: patient17Id,
+      name: 'Snowball',
+      species: 'Rabbit',
+      breed: 'Holland Lop',
+      age: 2,
+      gender: 'Female',
+      weight: 3,
+      weightUnit: 'lbs',
+      ownerId: owner11Id,
+      assignedDoctor: 'Sarah Wilson',
+      handlingDifficulty: 'easy',
+      status: 'active',
+      createdAt: new Date(Date.now() - 70 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.patients.push({
+      id: patient18Id,
+      name: 'Oscar',
+      species: 'Dog',
+      breed: 'Beagle',
+      age: 9,
+      gender: 'Male',
+      weight: 30,
+      weightUnit: 'lbs',
+      ownerId: owner12Id,
+      assignedDoctor: 'Michael Brown',
+      handlingDifficulty: 'easy',
+      status: 'active',
+      createdAt: new Date(Date.now() - 115 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.patients.push({
+      id: patient19Id,
+      name: 'Cleo',
+      species: 'Reptile',
+      breed: 'Bearded Dragon',
+      age: 4,
+      gender: 'Female',
+      weight: 1,
+      weightUnit: 'lbs',
+      ownerId: owner8Id,
+      assignedDoctor: 'Sarah Wilson',
+      handlingDifficulty: 'hard',
+      status: 'active',
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.patients.push({
+      id: patient20Id,
+      name: 'Buster',
+      species: 'Dog',
+      breed: 'Jack Russell Terrier',
+      age: 12,
+      gender: 'Male',
+      weight: 18,
+      weightUnit: 'lbs',
+      ownerId: owner12Id,
+      assignedDoctor: 'J Lee',
+      handlingDifficulty: 'medium',
+      status: 'inactive',
+      createdAt: new Date(Date.now() - 115 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
     // Create example medical records
     db.medical_records.push({
       id: uuidv4(),
@@ -305,6 +614,124 @@ const initDB = async () => {
       notes: 'Surgery completed without complications. Suture removal in 10-14 days. Owner given post-op care instructions.',
       veterinarian: 'J Lee',
       createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    // Additional medical records for comprehensive data
+    db.medical_records.push({
+      id: uuidv4(),
+      patientId: patient8Id,
+      visitDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      recordType: 'treatment',
+      symptoms: 'Difficulty breathing, snoring loudly, exercise intolerance',
+      diagnosis: 'Brachycephalic Obstructive Airway Syndrome (BOAS)',
+      treatment: 'Weight management plan, avoid overheating, consider surgical correction if symptoms worsen',
+      notes: 'Typical for bulldog breed. Owner educated on breed-specific respiratory issues.',
+      veterinarian: 'J Han',
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.medical_records.push({
+      id: uuidv4(),
+      patientId: patient9Id,
+      visitDate: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      recordType: 'dental',
+      symptoms: 'Bad breath, tartar buildup, difficulty eating hard food',
+      diagnosis: 'Periodontal disease, grade 2',
+      treatment: 'Professional dental cleaning under anesthesia, tooth extraction (2 molars), antibiotics, dental care instructions',
+      notes: 'Owner advised on daily dental care routine. Recheck in 6 months.',
+      veterinarian: 'J Lee',
+      createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.medical_records.push({
+      id: uuidv4(),
+      patientId: patient10Id,
+      visitDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      recordType: 'treatment',
+      symptoms: 'Limping on left hind leg, swelling around knee joint, reluctant to climb stairs',
+      diagnosis: 'Cranial cruciate ligament rupture',
+      treatment: 'Surgical repair scheduled, pain management (Tramadol), strict rest, physical therapy post-surgery',
+      notes: 'Large breed dog, common injury. Surgery successful. 8-week recovery period.',
+      veterinarian: 'Michael Brown',
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.medical_records.push({
+      id: uuidv4(),
+      patientId: patient11Id,
+      visitDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      recordType: 'vaccine',
+      symptoms: 'Annual wellness examination, vaccinations due',
+      diagnosis: 'Healthy adult cat, slight overweight condition',
+      treatment: 'FVRCP booster, rabies vaccination, weight management diet recommended',
+      notes: 'Weight: 10lbs (ideal 8-9lbs). Diet plan provided. Very calm during examination.',
+      veterinarian: 'Sarah Wilson',
+      createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.medical_records.push({
+      id: uuidv4(),
+      patientId: patient12Id,
+      visitDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      recordType: 'treatment',
+      symptoms: 'Wet tail, diarrhea, lethargy, decreased appetite',
+      diagnosis: 'Proliferative ileitis (wet tail disease)',
+      treatment: 'Antibiotics (Enrofloxacin), probiotics, supportive care, isolation from other hamsters',
+      notes: 'Common in young hamsters. Owner educated on proper hygiene and cage cleaning.',
+      veterinarian: 'Sarah Wilson',
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.medical_records.push({
+      id: uuidv4(),
+      patientId: patient14Id,
+      visitDate: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      recordType: 'treatment',
+      symptoms: 'Excessive scratching, red inflamed skin, hair loss on flanks',
+      diagnosis: 'Atopic dermatitis, environmental allergies',
+      treatment: 'Antihistamines, medicated shampoo, hypoallergenic diet trial, environmental management',
+      notes: 'Allergy testing recommended. Seasonal pattern noted. Good response to treatment.',
+      veterinarian: 'J Han',
+      createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.medical_records.push({
+      id: uuidv4(),
+      patientId: patient16Id,
+      visitDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      recordType: 'surgery',
+      symptoms: 'Routine neuter surgery, pre-operative examination',
+      diagnosis: 'Healthy young male cat, cleared for surgery',
+      treatment: 'Castration performed successfully, post-operative monitoring, pain management',
+      notes: 'Surgery without complications. Elizabethan collar for 7 days. Suture check in 10 days.',
+      veterinarian: 'J Han',
+      createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.medical_records.push({
+      id: uuidv4(),
+      patientId: patient18Id,
+      visitDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      recordType: 'treatment',
+      symptoms: 'Increased thirst and urination, weight loss despite good appetite',
+      diagnosis: 'Diabetes mellitus',
+      treatment: 'Insulin therapy (Vetsulin), dietary management, blood glucose monitoring',
+      notes: 'Senior dog, well-controlled with treatment. Owner trained on insulin administration.',
+      veterinarian: 'Michael Brown',
+      createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.medical_records.push({
+      id: uuidv4(),
+      patientId: patient19Id,
+      visitDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      recordType: 'treatment',
+      symptoms: 'Lethargy, loss of appetite, dark coloration',
+      diagnosis: 'Impaction, inadequate UVB lighting',
+      treatment: 'Warm baths, dietary adjustment, proper UVB lighting setup, calcium supplementation',
+      notes: 'Husbandry issues addressed. Owner educated on proper reptile care requirements.',
+      veterinarian: 'Sarah Wilson',
+      createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
     });
     
     // Create example appointments
@@ -404,6 +831,175 @@ const initDB = async () => {
       notes: 'Diagnosed with gastroenteritis, treatment plan provided',
       veterinarian: 'J Han',
       createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    // Additional appointments for comprehensive data
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const lastWeek = new Date(today);
+    lastWeek.setDate(lastWeek.getDate() - 7);
+    
+    // Today's appointments
+    db.appointments.push({
+      id: uuidv4(),
+      patientId: patient8Id,
+      date: today.toISOString().split('T')[0],
+      time: '11:30',
+      duration: 30,
+      reason: 'Follow-up for breathing issues, weight check',
+      status: 'scheduled',
+      notes: 'Monitor respiratory symptoms, discuss weight management progress',
+      veterinarian: 'J Han',
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.appointments.push({
+      id: uuidv4(),
+      patientId: patient12Id,
+      date: today.toISOString().split('T')[0],
+      time: '15:00',
+      duration: 30,
+      reason: 'Recheck after wet tail treatment',
+      status: 'scheduled',
+      notes: 'Assess recovery from proliferative ileitis',
+      veterinarian: 'Sarah Wilson',
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    // Tomorrow's appointments
+    db.appointments.push({
+      id: uuidv4(),
+      patientId: patient9Id,
+      date: tomorrow.toISOString().split('T')[0],
+      time: '09:30',
+      duration: 60,
+      reason: 'Dental cleaning follow-up and oral examination',
+      status: 'scheduled',
+      notes: 'Check healing after tooth extractions, assess oral health',
+      veterinarian: 'J Lee',
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.appointments.push({
+      id: uuidv4(),
+      patientId: patient11Id,
+      date: tomorrow.toISOString().split('T')[0],
+      time: '14:30',
+      duration: 30,
+      reason: 'Weight management consultation and diet adjustment',
+      status: 'scheduled',
+      notes: 'Evaluate weight loss progress, adjust diet plan if needed',
+      veterinarian: 'Sarah Wilson',
+      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    // Day after tomorrow
+    db.appointments.push({
+      id: uuidv4(),
+      patientId: patient14Id,
+      date: dayAfterTomorrow.toISOString().split('T')[0],
+      time: '10:00',
+      duration: 45,
+      reason: 'Allergy testing and treatment plan review',
+      status: 'scheduled',
+      notes: 'Discuss allergy test results, adjust treatment protocol',
+      veterinarian: 'J Han',
+      createdAt: new Date().toISOString()
+    });
+    
+    db.appointments.push({
+      id: uuidv4(),
+      patientId: patient16Id,
+      date: dayAfterTomorrow.toISOString().split('T')[0],
+      time: '16:30',
+      duration: 30,
+      reason: 'Post-surgical suture removal',
+      status: 'scheduled',
+      notes: 'Remove sutures from neuter surgery, check incision healing',
+      veterinarian: 'J Han',
+      createdAt: new Date().toISOString()
+    });
+    
+    // Next week appointments
+    db.appointments.push({
+      id: uuidv4(),
+      patientId: patient18Id,
+      date: nextWeek.toISOString().split('T')[0],
+      time: '09:00',
+      duration: 30,
+      reason: 'Diabetes management check, blood glucose monitoring',
+      status: 'scheduled',
+      notes: 'Review insulin dosage, check blood sugar levels',
+      veterinarian: 'Michael Brown',
+      createdAt: new Date().toISOString()
+    });
+    
+    db.appointments.push({
+      id: uuidv4(),
+      patientId: patient19Id,
+      date: nextWeek.toISOString().split('T')[0],
+      time: '11:00',
+      duration: 45,
+      reason: 'Reptile wellness examination and husbandry review',
+      status: 'scheduled',
+      notes: 'Assess recovery from impaction, review habitat setup',
+      veterinarian: 'Sarah Wilson',
+      createdAt: new Date().toISOString()
+    });
+    
+    // Past appointments (completed)
+    db.appointments.push({
+      id: uuidv4(),
+      patientId: patient10Id,
+      date: lastWeek.toISOString().split('T')[0],
+      time: '13:00',
+      duration: 90,
+      reason: 'Cruciate ligament surgery',
+      status: 'completed',
+      notes: 'Surgery successful, post-op instructions given',
+      veterinarian: 'Michael Brown',
+      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    db.appointments.push({
+      id: uuidv4(),
+      patientId: patient15Id,
+      date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      time: '10:30',
+      duration: 60,
+      reason: 'Annual wellness examination and vaccinations',
+      status: 'completed',
+      notes: 'All vaccinations up to date, excellent health',
+      veterinarian: 'J Lee',
+      createdAt: new Date(Date.now() - 16 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    // Cancelled appointments
+    db.appointments.push({
+      id: uuidv4(),
+      patientId: patient17Id,
+      date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      time: '14:00',
+      duration: 30,
+      reason: 'Routine check-up and nail trimming',
+      status: 'cancelled',
+      notes: 'Owner cancelled due to scheduling conflict',
+      veterinarian: 'Sarah Wilson',
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    
+    // No-show appointments
+    db.appointments.push({
+      id: uuidv4(),
+      patientId: patient20Id,
+      date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      time: '15:30',
+      duration: 30,
+      reason: 'Senior wellness examination',
+      status: 'no-show',
+      notes: 'Patient did not show up for appointment',
+      veterinarian: 'J Lee',
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     });
     
     console.log('Database initialized successfully');
