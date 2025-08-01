@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, ChevronDown, Plus, Trash2, Zap } from 'lucide-react';
-import { Bill, BillItem, Owner, Patient } from '../../types';
-import { billsAPI, ownersAPI, patientsAPI } from '../../services/api';
+import { Bill, BillItem, Owner, Patient, MedicalRecord } from '../../types';
+import { billsAPI, ownersAPI, patientsAPI, recordsAPI } from '../../services/api';
 import { ConfigurableBillItem } from './BillItemSettingsModal';
 
 interface BillFormProps {
@@ -27,6 +27,8 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
   
   const [owners, setOwners] = useState<Owner[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
+  const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>(editingBill?.medicalRecordIds || []);
   const [filteredOwners, setFilteredOwners] = useState<Owner[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   
@@ -56,6 +58,11 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
     }
   }, []);
 
+  useEffect(() => {
+    if (formData.patientId) {
+      fetchPatientMedicalRecords(formData.patientId);
+    }
+  }, [formData.patientId]);
   useEffect(() => {
     const filtered = owners.filter(owner =>
       `${owner.firstName} ${owner.lastName}`.toLowerCase().includes(ownerSearchTerm.toLowerCase()) ||
@@ -93,6 +100,15 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
     }
   };
 
+  const fetchPatientMedicalRecords = async (patientId: string) => {
+    try {
+      const data = await recordsAPI.getByPatientId(patientId);
+      setMedicalRecords(data);
+    } catch (error) {
+      console.error('Failed to fetch medical records:', error);
+      setMedicalRecords([]);
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -106,7 +122,7 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
 
       const billData = {
         ...formData,
-        medicalRecordIds: [], // Empty for now, will be linked later
+        medicalRecordIds: selectedRecordIds,
         items,
         subtotal,
         tax: tax,
@@ -162,6 +178,9 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
       setFormData(prev => ({ ...prev, ownerId: patient.owner!.id }));
       setSelectedOwnerName(`${patient.owner.firstName} ${patient.owner.lastName}`);
     }
+    
+    // Clear selected medical records when patient changes
+    setSelectedRecordIds([]);
   };
 
   const handleOwnerSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -224,6 +243,13 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
     setShowQuickAdd(null);
   };
 
+  const handleRecordToggle = (recordId: string) => {
+    setSelectedRecordIds(prev => 
+      prev.includes(recordId)
+        ? prev.filter(id => id !== recordId)
+        : [...prev, recordId]
+    );
+  };
   const calculateSubtotal = () => {
     return items.reduce((sum, item) => sum + item.totalPrice, 0);
   };
@@ -518,6 +544,46 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
               ))}
             </div>
           </div>
+
+          {/* Medical Records Selection */}
+          {formData.patientId && medicalRecords.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Link Medical Records ({selectedRecordIds.length} selected)
+              </h3>
+              <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                {medicalRecords.map((record) => (
+                  <div
+                    key={record.id}
+                    className={`flex items-center space-x-3 p-3 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-gray-50 ${
+                      selectedRecordIds.includes(record.id) ? 'bg-blue-50' : ''
+                    }`}
+                    onClick={() => handleRecordToggle(record.id)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedRecordIds.includes(record.id)}
+                      onChange={() => handleRecordToggle(record.id)}
+                      className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-900">
+                          {new Date(record.visitDate).toLocaleDateString()}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          Dr. {record.veterinarian}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 truncate">
+                        {record.diagnosis}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Bill Summary */}
           <div className="bg-gray-50 rounded-lg p-4">

@@ -223,9 +223,19 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, onClose, onEdit }) 
           {bill.medicalRecordIds.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Linked Medical Records</h3>
-              <p className="text-sm text-gray-600 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                {bill.medicalRecordIds.length} medical record{bill.medicalRecordIds.length !== 1 ? 's' : ''} linked to this bill
-              </p>
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-blue-900">
+                    {bill.medicalRecordIds.length} medical record{bill.medicalRecordIds.length !== 1 ? 's' : ''} linked to this bill
+                  </span>
+                  <span className="text-xs text-blue-600">
+                    Record IDs: {bill.medicalRecordIds.join(', ')}
+                  </span>
+                </div>
+                <p className="text-xs text-blue-700">
+                  These medical records are associated with the services billed to this patient.
+                </p>
+              </div>
             </div>
           )}
 

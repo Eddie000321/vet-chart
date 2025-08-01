@@ -285,8 +285,17 @@ const BillList: React.FC = () => {
 
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium text-gray-900">Medical Records</h4>
-                  <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                  <div className={`text-sm p-3 rounded-lg ${
+                    bill.medicalRecordIds.length > 0 
+                      ? 'text-blue-600 bg-blue-50 border border-blue-200' 
+                      : 'text-gray-600 bg-gray-50'
+                  }`}>
                     {bill.medicalRecordIds.length} record{bill.medicalRecordIds.length !== 1 ? 's' : ''} linked
+                    {bill.medicalRecordIds.length > 0 && (
+                      <div className="text-xs text-blue-500 mt-1">
+                        ✓ Medical records attached
+                      </div>
+                    )}
                   </div>
                 </div>
 
