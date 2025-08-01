@@ -88,7 +88,8 @@ const WeeklyScheduleChart: React.FC = () => {
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
-    setCurrentWeek(direction === 'next' ? addWeeks(currentWeek, 1) : subWeeks(currentWeek, 1));
+    const newWeek = direction === 'next' ? addWeeks(currentWeek, 1) : subWeeks(currentWeek, 1);
+    setCurrentWeek(newWeek);
   };
 
   const handleAppointmentClick = (appointment: Appointment) => {
@@ -202,7 +203,8 @@ const WeeklyScheduleChart: React.FC = () => {
         <div className="flex items-center space-x-4">
           <button
             onClick={() => navigateWeek('prev')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500"
+            title="Previous week"
           >
             <ChevronLeft className="w-4 h-4 text-gray-600" />
           </button>
@@ -213,14 +215,16 @@ const WeeklyScheduleChart: React.FC = () => {
           
           <button
             onClick={() => navigateWeek('next')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500"
+            title="Next week"
           >
             <ChevronRight className="w-4 h-4 text-gray-600" />
           </button>
           
           <button
             onClick={() => setCurrentWeek(new Date())}
-            className="px-3 py-1 text-xs font-medium text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
+            className="px-3 py-1 text-xs font-medium text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500"
+            title="Go to current week"
           >
             Today
           </button>
