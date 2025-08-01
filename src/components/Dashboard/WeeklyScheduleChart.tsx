@@ -30,6 +30,12 @@ const WeeklyScheduleChart: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { generateTimeSlots } = useBusinessHours();
   const { user } = useAuth();
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
+
+  // Update time slots when business hours change
+  useEffect(() => {
+    setTimeSlots(generateTimeSlots());
+  }, [generateTimeSlots]);
 
   useEffect(() => {
     fetchAppointments();
@@ -55,7 +61,6 @@ const WeeklyScheduleChart: React.FC = () => {
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 0 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   
-  const timeSlots = generateTimeSlots();
 
   const getAppointmentsForDay = (date: Date) => {
     return appointments.filter(apt => {

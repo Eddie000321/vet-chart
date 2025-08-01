@@ -4,6 +4,7 @@ import { Appointment } from '../../types';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, getDay, setMonth, setYear, getMonth, getYear } from 'date-fns';
 import { useBusinessHours } from '../../hooks/useBusinessHours';
 import { appointmentsAPI } from '../../services/api';
+import { useEffect } from 'react';
 
 interface CalendarViewProps {
   viewMode: 'day' | 'week' | 'month';
@@ -33,6 +34,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 
   const { generateTimeSlots } = useBusinessHours();
   const [selectedDoctor, setSelectedDoctor] = useState<string>('all');
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
+
+  // Update time slots when business hours change
+  useEffect(() => {
+    setTimeSlots(generateTimeSlots());
+  }, [generateTimeSlots]);
 
   // Doctor color mapping
   const doctorColors = {
@@ -161,8 +168,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     }
     return '';
   };
-
-  const timeSlots = generateTimeSlots();
 
   const renderDayView = () => {
     const doctors = getDoctorsForDate(currentDate);

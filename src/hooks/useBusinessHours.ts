@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 
 export interface BusinessHoursConfig {
   startHour: number;
@@ -33,7 +34,7 @@ export const useBusinessHours = () => {
     localStorage.setItem('businessHours', JSON.stringify(newSettings));
   };
 
-  const generateTimeSlots = () => {
+  const generateTimeSlots = useCallback(() => {
     const slots = [];
     const totalMinutes = (businessHours.endHour - businessHours.startHour) * 60;
     const numberOfSlots = Math.floor(totalMinutes / businessHours.intervalMinutes);
@@ -47,7 +48,7 @@ export const useBusinessHours = () => {
     }
 
     return slots;
-  };
+  }, [businessHours.startHour, businessHours.endHour, businessHours.intervalMinutes]);
 
   const isWithinBusinessHours = (timeString: string) => {
     const [hour, minute] = timeString.split(':').map(Number);
