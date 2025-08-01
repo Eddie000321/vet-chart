@@ -42,6 +42,7 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showQuickAdd, setShowQuickAdd] = useState<number | null>(null);
+  const [showAddItemDropdown, setShowAddItemDropdown] = useState(false);
 
   useEffect(() => {
     fetchOwners();
