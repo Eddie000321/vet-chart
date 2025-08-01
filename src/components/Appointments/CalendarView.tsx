@@ -382,6 +382,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                         <span className="text-xs text-teal-600 font-medium">Drop here</span>
                       </div>
                     )}
+                    {/* Grid overlay for precise drop targeting */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="w-full h-full border border-transparent hover:border-teal-200 transition-colors"></div>
+                    </div>
                   </div>
                 );
               })}
@@ -450,28 +454,29 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                         {slotAppointments.map((appointment) => {
                           const doctorColor = getDoctorColor(appointment.veterinarian);
                           return (
-                            <div
-                              key={appointment.id}
-                              className={`${doctorColor.bgLight} border ${doctorColor.border} rounded p-1 cursor-move hover:shadow-md transition-all ${
-                                draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
-                              } select-none relative z-20`}
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, appointment)}
-                              onDragEnd={handleDragEnd}
-                              onClick={() => onAppointmentClick(appointment)}
-                              data-appointment-id={appointment.id}
-                            >
-                              <p className={`text-xs font-medium ${doctorColor.text} truncate`}>
-                                {appointment.patient?.name}
-                              </p>
-                              <p className={`text-xs ${doctorColor.text} opacity-75 truncate`}>
-                                Dr. {appointment.veterinarian}
-                              </p>
-                              <div className="flex items-center justify-between mt-1">
-                                <span className={`text-xs ${doctorColor.text} opacity-60`}>{appointment.time}</span>
-                                <span className={`text-xs ${doctorColor.text} opacity-60`}>{appointment.duration}m</span>
+                            <React.Fragment key={appointment.id}>
+                              <div
+                                className={`${doctorColor.bgLight} border ${doctorColor.border} rounded p-1 cursor-move hover:shadow-md transition-all ${
+                                  draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
+                                } select-none relative z-20`}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, appointment)}
+                                onDragEnd={handleDragEnd}
+                                onClick={() => onAppointmentClick(appointment)}
+                                data-appointment-id={appointment.id}
+                              >
+                                <p className={`text-xs font-medium ${doctorColor.text} truncate`}>
+                                  {appointment.patient?.name}
+                                </p>
+                                <p className={`text-xs ${doctorColor.text} opacity-75 truncate`}>
+                                  Dr. {appointment.veterinarian}
+                                </p>
+                                <div className="flex items-center justify-between mt-1">
+                                  <span className={`text-xs ${doctorColor.text} opacity-60`}>{appointment.time}</span>
+                                  <span className={`text-xs ${doctorColor.text} opacity-60`}>{appointment.duration}m</span>
+                                </div>
                               </div>
-                            </div>
+                            </React.Fragment>
                           );
                         })}
                         {slotAppointments.length > 1 && (
@@ -480,9 +485,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                           </div>
                         )}
                       </div>
-                      
-                      {/* Subtle grid lines for better visual alignment */}
-                      <div className="absolute inset-0 pointer-events-none border-r border-gray-100 opacity-30"></div>
                     </div>
                   );
                 })}
@@ -492,6 +494,15 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
       </div>
     );
+    
+    // Add visual feedback for successful drops
+    const showSuccessMessage = (message: string) => {
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => document.body.removeChild(toast), 3000);
+    };
   };
 
   const renderMonthView = () => {
