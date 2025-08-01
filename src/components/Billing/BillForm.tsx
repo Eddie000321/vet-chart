@@ -14,7 +14,8 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded }) => {
     patientId: '',
     billDate: new Date().toISOString().split('T')[0],
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-    notes: ''
+    notes: '',
+    taxRate: 0.08 // Default 8% tax rate
   });
   
   const [items, setItems] = useState<BillItem[]>([
@@ -94,7 +95,7 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded }) => {
         medicalRecordIds: [], // Empty for now, will be linked later
         items,
         subtotal,
-        tax,
+        tax: tax,
         totalAmount,
         status: 'draft' as const
       };
@@ -197,7 +198,7 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded }) => {
   };
 
   const calculateTax = () => {
-    return calculateSubtotal() * 0.08; // 8% tax rate
+    return calculateSubtotal() * formData.taxRate;
   };
 
   const calculateTotal = () => {
@@ -447,13 +448,36 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded }) => {
           {/* Bill Summary */}
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="text-lg font-medium text-gray-900 mb-3">Bill Summary</h3>
+            
+            {/* Tax Rate Selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tax Rate
+              </label>
+              <select
+                value={formData.taxRate}
+                onChange={(e) => setFormData(prev => ({ ...prev, taxRate: parseFloat(e.target.value) }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              >
+                <option value={0}>No Tax (0%)</option>
+                <option value={0.05}>5%</option>
+                <option value={0.06}>6%</option>
+                <option value={0.07}>7%</option>
+                <option value={0.08}>8%</option>
+                <option value={0.09}>9%</option>
+                <option value={0.10}>10%</option>
+                <option value={0.125}>12.5%</option>
+                <option value={0.15}>15%</option>
+              </select>
+            </div>
+            
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal:</span>
                 <span className="font-medium">${calculateSubtotal().toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Tax (8%):</span>
+                <span className="text-gray-600">Tax ({(formData.taxRate * 100).toFixed(1)}%):</span>
                 <span className="font-medium">${calculateTax().toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2">
