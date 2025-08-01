@@ -61,7 +61,7 @@ To get the Vet Chart system up and running, follow these steps:
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/Eddie000321/vet-chart.git
 cd vetchart-emr-system
 ```
 
