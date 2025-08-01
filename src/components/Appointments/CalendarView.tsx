@@ -147,23 +147,33 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 
   const handleDragEnter = (e: React.DragEvent, date: Date, time: string, doctor?: string) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOverSlot({ date, time, doctor });
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    // Only clear drag over if we're leaving the drop zone completely
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+    e.stopPropagation();
+    
+    // More precise drag leave detection
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    // Only clear if mouse is completely outside the drop zone
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
       setDragOverSlot(null);
     }
   };
 
   const handleDrop = async (e: React.DragEvent, targetDate: Date, targetTime: string, targetDoctor?: string) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOverSlot(null);
 
     if (!draggedAppointment) return;
 
+    // Ensure we format the date correctly for the API
     const newDate = format(targetDate, 'yyyy-MM-dd');
     const newVeterinarian = targetDoctor || draggedAppointment.veterinarian;
 
@@ -171,6 +181,13 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     if (draggedAppointment.date === newDate && 
         draggedAppointment.time === targetTime && 
         draggedAppointment.veterinarian === newVeterinarian) {
+      return;
+    }
+
+    // Validate that the target time slot exists in business hours
+    const timeSlots = generateTimeSlots();
+    if (!timeSlots.includes(targetTime)) {
+      alert('Invalid time slot. Please drop on a valid time.');
       return;
     }
 
@@ -187,6 +204,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       return;
     }
 
+    console.log(`Moving appointment from ${draggedAppointment.date} ${draggedAppointment.time} to ${newDate} ${targetTime}`);
+    
     try {
       const updatedAppointment = await appointmentsAPI.update(draggedAppointment.id, {
         ...draggedAppointment,
@@ -195,6 +214,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         veterinarian: newVeterinarian
       });
       
+      console.log('Appointment updated successfully:', updatedAppointment);
       onAppointmentUpdated?.(updatedAppointment);
     } catch (error) {
       console.error('Failed to update appointment:', error);
@@ -382,7 +402,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                   return (
                     <div 
                       key={time} 
-                      className={`h-16 border-b border-gray-100 p-1 transition-colors ${
+                      className={`h-16 border-b border-gray-100 p-1 transition-all duration-200 ${
                         isDropTarget ? 'bg-teal-100 border-teal-300' : ''
                       }`}
                       onDragOver={handleDragOver}
@@ -390,6 +410,13 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, day, time)}
                     >
+                      {/* Visual drop zone indicator */}
+                      {isDropTarget && slotAppointments.length === 0 && (
+                        <div className="h-full w-full flex items-center justify-center border-2 border-dashed border-teal-400 rounded bg-teal-50">
+                          <span className="text-xs text-teal-600 font-medium">Drop here</span>
+                        </div>
+                      )}
+                      
                       <div className="space-y-1 max-h-full overflow-y-auto">
                         {slotAppointments.map((appointment) => {
                           const doctorColor = getDoctorColor(appointment.veterinarian);
@@ -398,7 +425,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                               key={appointment.id}
                               className={`${doctorColor.bgLight} border ${doctorColor.border} rounded p-1 cursor-move hover:shadow-md transition-all ${
                                 draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
-                              }`}
+                              } select-none`}
                               draggable
                               onDragStart={(e) => handleDragStart(e, appointment)}
                               onDragEnd={handleDragEnd}
@@ -407,9 +434,13 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                               <p className={`text-xs font-medium ${doctorColor.text} truncate`}>
                                 {appointment.patient?.name}
                               </p>
-                              <p className={`text-xs ${doctorColor.text} opacity-60 truncate`}>
+                              <p className={`text-xs ${doctorColor.text} opacity-75 truncate`}>
                                 Dr. {appointment.veterinarian}
                               </p>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className={`text-xs ${doctorColor.text} opacity-60`}>{appointment.time}</span>
+                                <span className={`text-xs ${doctorColor.text} opacity-60`}>{appointment.duration}m</span>
+                              </div>
                             </div>
                           );
                         })}
@@ -419,6 +450,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                           </div>
                         )}
                       </div>
+                      
+                      {/* Subtle grid lines for better visual alignment */}
+                      <div className="absolute inset-0 pointer-events-none border-r border-gray-100 opacity-30"></div>
                     </div>
                   );
                 })}
@@ -428,6 +462,15 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
       </div>
     );
+    
+    // Add visual feedback for successful drops
+    const showSuccessMessage = (message: string) => {
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => document.body.removeChild(toast), 3000);
+    };
   };
 
   const renderMonthView = () => {
