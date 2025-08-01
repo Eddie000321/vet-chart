@@ -99,11 +99,12 @@ const WeeklyScheduleChart: React.FC = () => {
   const handleDragStart = (e: React.DragEvent, appointment: Appointment) => {
     setDraggedAppointment(appointment);
     e.dataTransfer.effectAllowed = 'move';
-    e.currentTarget.style.opacity = '0.5';
+    e.dataTransfer.setData('text/plain', appointment.id);
+    (e.currentTarget as HTMLElement).style.opacity = '0.5';
   };
 
   const handleDragEnd = (e: React.DragEvent) => {
-    e.currentTarget.style.opacity = '1';
+    (e.currentTarget as HTMLElement).style.opacity = '1';
     setDraggedAppointment(null);
     setDragOverSlot(null);
   };
@@ -115,12 +116,19 @@ const WeeklyScheduleChart: React.FC = () => {
 
   const handleDragEnter = (e: React.DragEvent, date: Date, time: string) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOverSlot({ date, time });
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+    e.stopPropagation();
+    // Only clear drag over if we're leaving the drop zone completely
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
       setDragOverSlot(null);
     }
   };
@@ -272,7 +280,7 @@ const WeeklyScheduleChart: React.FC = () => {
                     <div 
                       key={`${day.toISOString()}-${time}`} 
                       className={`p-1 border-r border-gray-200 last:border-r-0 h-12 transition-colors ${
-                        isDropTarget ? 'bg-teal-100' : ''
+                        isDropTarget ? 'bg-teal-100 border-2 border-teal-300 border-dashed' : ''
                       }`}
                       onDragOver={handleDragOver}
                       onDragEnter={(e) => handleDragEnter(e, day, time)}
@@ -280,30 +288,44 @@ const WeeklyScheduleChart: React.FC = () => {
                       onDrop={(e) => handleDrop(e, day, time)}
                     >
                       {appointment && (
-                        <div className="h-full relative group">
+                        <div className="h-full relative group select-none">
                           <div 
-                            className={`h-full w-full rounded ${getStatusColor(appointment.status)} opacity-80 hover:opacity-100 transition-opacity cursor-move ${
+                            className={`h-full w-full rounded ${getStatusColor(appointment.status)} opacity-90 hover:opacity-100 transition-all cursor-move shadow-sm hover:shadow-md ${
                               draggedAppointment?.id === appointment.id ? 'opacity-50' : ''
                             }`}
                             draggable
                             onDragStart={(e) => handleDragStart(e, appointment)}
                             onDragEnd={handleDragEnd}
                             onClick={() => handleAppointmentClick(appointment)}
+                            title={`${appointment.patient?.name} - ${appointment.reason.substring(0, 50)}...`}
                           >
                             <div className="p-1 text-white text-xs">
                               <div className="font-medium truncate">
                                 {appointment.patient?.name}
                               </div>
+                              <div className="text-xs opacity-75 truncate">
+                                {appointment.patient?.species}
+                              </div>
                             </div>
                           </div>
                           
                           {/* Tooltip */}
-                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap">
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap shadow-lg">
                             <div className="font-medium">{appointment.patient?.name}</div>
                             <div className="text-gray-300">{appointment.patient?.species}</div>
                             <div className="text-gray-300">Dr. {appointment.veterinarian}</div>
                             <div className="text-gray-300">{appointment.duration} min</div>
+                            <div className="text-gray-300 max-w-xs truncate">{appointment.reason}</div>
+                            {/* Tooltip arrow */}
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                           </div>
+                        </div>
+                      )}
+                      
+                      {/* Drop zone indicator when dragging */}
+                      {isDropTarget && !appointment && (
+                        <div className="h-full w-full flex items-center justify-center">
+                          <div className="text-teal-600 text-xs font-medium">Drop here</div>
                         </div>
                       )}
                     </div>
@@ -317,6 +339,10 @@ const WeeklyScheduleChart: React.FC = () => {
 
       {/* Legend */}
       <div className="flex items-center justify-center space-x-6 mt-4 pt-4 border-t border-gray-200">
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-gray-300 border border-dashed border-gray-400 rounded"></div>
+          <span className="text-xs text-gray-600">Drop Zone</span>
+        </div>
         <div className="flex items-center space-x-2">
           <div className="w-3 h-3 bg-blue-500 rounded"></div>
           <span className="text-xs text-gray-600">Scheduled</span>
