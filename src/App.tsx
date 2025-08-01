@@ -9,6 +9,7 @@ import PatientList from './components/Patients/PatientList';
 import RecordList from './components/Records/RecordList';
 import AppointmentList from './components/Appointments/AppointmentList';
 import MemberList from './components/Members/MemberList';
+import BillList from './components/Billing/BillList';
 import LoginForm from './components/Auth/LoginForm';
 
 const AppContent: React.FC = () => {
