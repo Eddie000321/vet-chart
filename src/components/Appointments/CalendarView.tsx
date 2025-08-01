@@ -17,6 +17,7 @@ interface CalendarViewProps {
   deletingId: string | null;
   onDayClick?: (date: Date) => void;
   onAppointmentUpdated?: (appointment: Appointment) => void;
+  onAddAppointment?: (defaults: { date: string; time: string; veterinarian: string }) => void;
 }
 
 const CalendarView: React.FC<CalendarViewProps> = ({
@@ -29,7 +30,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   onDeleteAppointment,
   deletingId,
   onDayClick,
-  onAppointmentUpdated
+  onAppointmentUpdated,
+  onAddAppointment
 }) => {
 
   const { generateTimeSlots } = useBusinessHours();
@@ -251,12 +253,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                     {/* Add Appointment Button - Always visible */}
                     <button
                       onClick={() => {
-                        setNewAppointmentDefaults({
+                        onAddAppointment?.({
                           date: format(currentDate, 'yyyy-MM-dd'),
                           time: time,
                           veterinarian: doctor
                         });
-                        setShowAddAppointmentForm(true);
                       }}
                       className="absolute inset-0 w-full h-full bg-transparent hover:bg-blue-50 hover:bg-opacity-50 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 z-0"
                       title={`Add appointment at ${time} for Dr. ${doctor}`}
@@ -346,12 +347,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                       {/* Add Appointment Button - Always visible */}
                       <button
                         onClick={() => {
-                          setNewAppointmentDefaults({
+                          onAddAppointment?.({
                             date: format(day, 'yyyy-MM-dd'),
                             time: time,
                             veterinarian: ''
                           });
-                          setShowAddAppointmentForm(true);
                         }}
                         className="absolute inset-0 w-full h-full bg-transparent hover:bg-blue-50 hover:bg-opacity-50 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 z-0"
                         title={`Add appointment at ${time} on ${format(day, 'MMM d')}`}
@@ -439,12 +439,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                 {/* Add Appointment Button for Month View */}
                 <button
                   onClick={() => {
-                    setNewAppointmentDefaults({
+                    onAddAppointment?.({
                       date: format(day, 'yyyy-MM-dd'),
                       time: '',
                       veterinarian: ''
                     });
-                    setShowAddAppointmentForm(true);
                   }}
                   className="absolute inset-0 w-full h-full bg-transparent hover:bg-blue-50 hover:bg-opacity-30 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100"
                   title={`Add appointment on ${format(day, 'MMM d, yyyy')}`}

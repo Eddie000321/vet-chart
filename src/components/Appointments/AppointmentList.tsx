@@ -23,6 +23,7 @@ const AppointmentList: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showBusinessHoursSettings, setShowBusinessHoursSettings] = useState(false);
   const { businessHours, updateBusinessHours } = useBusinessHours();
+  const [initialAppointmentData, setInitialAppointmentData] = useState<{ date: string; time: string; veterinarian: string } | null>(null);
 
   const handleDayClick = (date: Date) => {
     setCurrentDate(date);
@@ -62,6 +63,7 @@ const AppointmentList: React.FC = () => {
   const handleAppointmentAdded = (newAppointment: Appointment) => {
     setAppointments(prev => [newAppointment, ...prev]);
     setShowForm(false);
+    setInitialAppointmentData(null);
   };
 
   const handleAppointmentUpdated = (updatedAppointment: Appointment) => {
@@ -108,6 +110,11 @@ const AppointmentList: React.FC = () => {
     } catch (error: any) {
       alert(error.message || 'Failed to update appointment status');
     }
+  };
+
+  const handleAddAppointmentFromCalendar = (defaults: { date: string; time: string; veterinarian: string }) => {
+    setInitialAppointmentData(defaults);
+    setShowForm(true);
   };
 
   const getStatusColor = (status: Appointment['status']) => {
@@ -374,14 +381,19 @@ const AppointmentList: React.FC = () => {
           deletingId={deletingId}
           onDayClick={handleDayClick}
           onAppointmentUpdated={handleAppointmentUpdated}
+          onAddAppointment={handleAddAppointmentFromCalendar}
         />
       )}
 
       {/* Appointment Form Modal */}
       {showForm && (
         <AppointmentForm
-          onClose={() => setShowForm(false)}
+          onClose={() => {
+            setShowForm(false);
+            setInitialAppointmentData(null);
+          }}
           onAppointmentAdded={handleAppointmentAdded}
+          initialData={initialAppointmentData}
         />
       )}
 

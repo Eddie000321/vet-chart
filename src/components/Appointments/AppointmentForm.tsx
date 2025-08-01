@@ -8,19 +8,20 @@ import { useBusinessHours } from '../../hooks/useBusinessHours';
 interface AppointmentFormProps {
   onClose: () => void;
   onAppointmentAdded: (appointment: Appointment) => void;
+  initialData?: { date: string; time: string; veterinarian: string } | null;
 }
 
-const AppointmentForm: React.FC<AppointmentFormProps> = ({ onClose, onAppointmentAdded }) => {
+const AppointmentForm: React.FC<AppointmentFormProps> = ({ onClose, onAppointmentAdded, initialData }) => {
   const { user } = useAuth();
   const { generateTimeSlots } = useBusinessHours();
   const [formData, setFormData] = useState({
     patientId: '',
-    date: new Date().toISOString().split('T')[0],
-    time: '09:00',
+    date: initialData?.date || new Date().toISOString().split('T')[0],
+    time: initialData?.time || '09:00',
     duration: 30,
     reason: '',
     notes: '',
-    veterinarian: `${user?.firstName} ${user?.lastName}` || ''
+    veterinarian: initialData?.veterinarian || `${user?.firstName} ${user?.lastName}` || ''
   });
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
