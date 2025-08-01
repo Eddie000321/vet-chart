@@ -2,15 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-// Initialize Prisma Client
-const prisma = new PrismaClient();
 
 // Middleware
 app.use(cors());
@@ -27,7 +23,8 @@ const db = {
   owners: [],
   patients: [],
   medical_records: [],
-  appointments: []
+  appointments: [],
+  bills: []
 };
 
 // Initialize database with default data
@@ -1572,6 +1569,240 @@ app.delete('/api/appointments/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Appointment deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Bills API Routes
+app.get('/api/bills', authenticateToken, async (req, res) => {
+  try {
+    const bills = db.bills.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    // Populate related data
+    const populatedBills = bills.map((bill) => {
+      const owner = db.owners.find(o => o.id === bill.ownerId);
+      const patient = db.patients.find(p => p.id === bill.patientId);
+      const appointment = bill.appointmentId ? db.appointments.find(a => a.id === bill.appointmentId) : null;
+      const medicalRecords = db.medical_records.filter(r => bill.medicalRecordIds.includes(r.id));
+      
+      return {
+        ...bill,
+        owner,
+        patient,
+        appointment,
+        medicalRecords
+      };
+    });
+    
+    res.json(populatedBills);
+  } catch (error) {
+    console.error('Error fetching bills:', error);
+    res.status(500).json({ message: 'Failed to fetch bills' });
+  }
+});
+
+app.post('/api/bills', authenticateToken, async (req, res) => {
+  try {
+    const {
+      ownerId,
+      patientId,
+      appointmentId,
+      medicalRecordIds = [],
+      items = [],
+      subtotal,
+      tax,
+      totalAmount,
+      status = 'draft',
+      dueDate,
+      notes
+    } = req.body;
+
+    // Generate bill number
+    const billCount = db.bills.length;
+    const billNumber = `BILL-${String(billCount + 1).padStart(6, '0')}`;
+
+    const newBill = {
+      id: uuidv4(),
+      billNumber,
+      ownerId,
+      patientId,
+      appointmentId,
+      medicalRecordIds,
+      items,
+      subtotal,
+      tax,
+      totalAmount,
+      status,
+      dueDate: new Date(dueDate),
+      notes,
+      createdAt: new Date().toISOString()
+    };
+
+    db.bills.push(newBill);
+
+    // Populate related data for response
+    const owner = db.owners.find(o => o.id === ownerId);
+    const patient = db.patients.find(p => p.id === patientId);
+    const appointment = appointmentId ? db.appointments.find(a => a.id === appointmentId) : null;
+    const medicalRecords = db.medical_records.filter(r => medicalRecordIds.includes(r.id));
+
+    const populatedBill = {
+      ...newBill,
+      owner,
+      patient,
+      appointment,
+      medicalRecords
+    };
+
+    res.status(201).json(populatedBill);
+  } catch (error) {
+    console.error('Error creating bill:', error);
+    res.status(500).json({ message: 'Failed to create bill' });
+  }
+});
+
+app.get('/api/bills/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const bill = db.bills.find(b => b.id === id);
+
+    if (!bill) {
+      return res.status(404).json({ message: 'Bill not found' });
+    }
+
+    // Populate related data
+    const owner = db.owners.find(o => o.id === bill.ownerId);
+    const patient = db.patients.find(p => p.id === bill.patientId);
+    const appointment = bill.appointmentId ? db.appointments.find(a => a.id === bill.appointmentId) : null;
+    const medicalRecords = db.medical_records.filter(r => bill.medicalRecordIds.includes(r.id));
+
+    const populatedBill = {
+      ...bill,
+      owner,
+      patient,
+      appointment,
+      medicalRecords
+    };
+
+    res.json(populatedBill);
+  } catch (error) {
+    console.error('Error fetching bill:', error);
+    res.status(500).json({ message: 'Failed to fetch bill' });
+  }
+});
+
+app.put('/api/bills/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    if (updateData.dueDate) {
+      updateData.dueDate = new Date(updateData.dueDate);
+    }
+
+    const billIndex = db.bills.findIndex(b => b.id === id);
+    
+    if (billIndex === -1) {
+      return res.status(404).json({ message: 'Bill not found' });
+    }
+
+    const updatedBill = {
+      ...db.bills[billIndex],
+      ...updateData
+    };
+
+    db.bills[billIndex] = updatedBill;
+
+    // Populate related data for response
+    const owner = db.owners.find(o => o.id === updatedBill.ownerId);
+    const patient = db.patients.find(p => p.id === updatedBill.patientId);
+    const appointment = updatedBill.appointmentId ? db.appointments.find(a => a.id === updatedBill.appointmentId) : null;
+    const medicalRecords = db.medical_records.filter(r => updatedBill.medicalRecordIds.includes(r.id));
+
+    const populatedBill = {
+      ...updatedBill,
+      owner,
+      patient,
+      appointment,
+      medicalRecords
+    };
+
+    res.json(populatedBill);
+  } catch (error) {
+    console.error('Error updating bill:', error);
+    res.status(500).json({ message: 'Failed to update bill' });
+  }
+});
+
+app.delete('/api/bills/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const billIndex = db.bills.findIndex(b => b.id === id);
+    
+    if (billIndex === -1) {
+      return res.status(404).json({ message: 'Bill not found' });
+    }
+    
+    db.bills.splice(billIndex, 1);
+    res.json({ message: 'Bill deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting bill:', error);
+    res.status(500).json({ message: 'Failed to delete bill' });
+  }
+});
+
+app.get('/api/bills/owner/:ownerId', authenticateToken, async (req, res) => {
+  try {
+    const { ownerId } = req.params;
+    const bills = db.bills.filter(b => b.ownerId === ownerId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    // Populate related data
+    const populatedBills = bills.map((bill) => {
+      const owner = db.owners.find(o => o.id === bill.ownerId);
+      const patient = db.patients.find(p => p.id === bill.patientId);
+      const appointment = bill.appointmentId ? db.appointments.find(a => a.id === bill.appointmentId) : null;
+      const medicalRecords = db.medical_records.filter(r => bill.medicalRecordIds.includes(r.id));
+      
+      return {
+        ...bill,
+        owner,
+        patient,
+        appointment,
+        medicalRecords
+      };
+    });
+    
+    res.json(populatedBills);
+  } catch (error) {
+    console.error('Error fetching bills by owner:', error);
+    res.status(500).json({ message: 'Failed to fetch bills' });
+  }
+});
+
+app.get('/api/bills/patient/:patientId', authenticateToken, async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const bills = db.bills.filter(b => b.patientId === patientId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    // Populate related data
+    const populatedBills = bills.map((bill) => {
+      const owner = db.owners.find(o => o.id === bill.ownerId);
+      const patient = db.patients.find(p => p.id === bill.patientId);
+      const appointment = bill.appointmentId ? db.appointments.find(a => a.id === bill.appointmentId) : null;
+      const medicalRecords = db.medical_records.filter(r => bill.medicalRecordIds.includes(r.id));
+      
+      return {
+        ...bill,
+        owner,
+        patient,
+        appointment,
+        medicalRecords
+      };
+    });
+    
+    res.json(populatedBills);
+  } catch (error) {
+    console.error('Error fetching bills by patient:', error);
+    res.status(500).json({ message: 'Failed to fetch bills' });
   }
 });
 

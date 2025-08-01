@@ -41,6 +41,8 @@ const AppContent: React.FC = () => {
         return <AppointmentList />;
       case 'members':
         return <MemberList />;
+      case 'billing':
+        return <BillList />;
       case 'settings':
         // Only allow users with admin role to access clinic analytics
         return user?.roles?.includes('admin') ? <ClinicDashboard /> : <Dashboard onNavigate={setActiveTab} />;

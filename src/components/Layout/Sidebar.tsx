@@ -30,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
     { id: 'records', label: 'Medical Records', icon: FileText },
     { id: 'appointments', label: 'Appointments', icon: Calendar },
     { id: 'members', label: 'Hospital Members', icon: UserCheck },
+    { id: 'billing', label: 'Billing', icon: Receipt },
   ];
 
   // Only show Clinic Analytics for users with admin role
