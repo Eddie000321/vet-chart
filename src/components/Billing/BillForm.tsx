@@ -6,20 +6,21 @@ import { billsAPI, ownersAPI, patientsAPI } from '../../services/api';
 interface BillFormProps {
   onClose: () => void;
   onBillAdded: (bill: Bill) => void;
+  editingBill?: Bill | null;
 }
 
-const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded }) => {
+const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill }) => {
   const [formData, setFormData] = useState({
-    ownerId: '',
-    patientId: '',
-    billDate: new Date().toISOString().split('T')[0],
-    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-    notes: '',
-    taxRate: 0.08 // Default 8% tax rate
+    ownerId: editingBill?.ownerId || '',
+    patientId: editingBill?.patientId || '',
+    billDate: editingBill?.billDate.split('T')[0] || new Date().toISOString().split('T')[0],
+    dueDate: editingBill?.dueDate.split('T')[0] || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    notes: editingBill?.notes || '',
+    taxRate: editingBill ? (editingBill.tax / editingBill.subtotal) : 0.08
   });
   
   const [items, setItems] = useState<BillItem[]>([
-    { id: '1', description: '', quantity: 1, unitPrice: 0, totalPrice: 0 }
+    editingBill?.items || [{ id: '1', description: '', quantity: 1, unitPrice: 0, totalPrice: 0 }]
   ]);
   
   const [owners, setOwners] = useState<Owner[]>([]);
@@ -40,6 +41,16 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded }) => {
   useEffect(() => {
     fetchOwners();
     fetchPatients();
+    
+    // Set initial owner and patient names if editing
+    if (editingBill) {
+      if (editingBill.owner) {
+        setSelectedOwnerName(`${editingBill.owner.firstName} ${editingBill.owner.lastName}`);
+      }
+      if (editingBill.patient) {
+        setSelectedPatientName(`${editingBill.patient.name} (${editingBill.patient.species})`);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -87,7 +98,7 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded }) => {
     try {
       // Calculate totals
       const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-      const tax = subtotal * 0.08; // 8% tax rate
+      const tax = subtotal * formData.taxRate;
       const totalAmount = subtotal + tax;
 
       const billData = {
@@ -97,13 +108,18 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded }) => {
         subtotal,
         tax: tax,
         totalAmount,
-        status: 'draft' as const
+        status: editingBill?.status || 'draft' as const
       };
 
-      const newBill = await billsAPI.create(billData);
-      onBillAdded(newBill);
+      if (editingBill) {
+        const updatedBill = await billsAPI.update(editingBill.id, billData);
+        onBillAdded(updatedBill);
+      } else {
+        const newBill = await billsAPI.create(billData);
+        onBillAdded(newBill);
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to create bill');
+      setError(err.message || `Failed to ${editingBill ? 'update' : 'create'} bill`);
     } finally {
       setLoading(false);
     }
@@ -209,7 +225,9 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Create New Bill</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {editingBill ? 'Edit Bill' : 'Create New Bill'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -515,7 +533,7 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded }) => {
               disabled={loading}
               className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors disabled:opacity-50"
             >
-              {loading ? 'Creating...' : 'Create Bill'}
+              {loading ? (editingBill ? 'Updating...' : 'Creating...') : (editingBill ? 'Update Bill' : 'Create Bill')}
             </button>
           </div>
         </form>

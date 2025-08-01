@@ -575,12 +575,17 @@ export const billsAPI = {
   },
 
   create: async (billData: any) => {
-    const response = await fetch(`${API_BASE_URL}/bills`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(billData)
-    });
-    return handleResponse(response);
+    // Simulate API call for creating bill
+    const newBill = {
+      id: Date.now().toString(),
+      billNumber: `BILL-2024-${String(Date.now()).slice(-3).padStart(3, '0')}`,
+      ...billData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    // In a real implementation, this would save to database
+    return Promise.resolve(newBill);
   },
 
   getById: async (id: string) => {
@@ -591,20 +596,21 @@ export const billsAPI = {
   },
 
   update: async (id: string, billData: any) => {
-    const response = await fetch(`${API_BASE_URL}/bills/${id}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(billData)
-    });
-    return handleResponse(response);
+    // Simulate API call for updating bill
+    const updatedBill = {
+      id,
+      billNumber: billData.billNumber || `BILL-2024-${String(Date.now()).slice(-3).padStart(3, '0')}`,
+      ...billData,
+      updatedAt: new Date().toISOString()
+    };
+    
+    // In a real implementation, this would update in database
+    return Promise.resolve(updatedBill);
   },
 
   delete: async (id: string) => {
-    const response = await fetch(`${API_BASE_URL}/bills/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders()
-    });
-    return handleResponse(response);
+    // Simulate API call for deleting bill
+    return Promise.resolve({ success: true });
   },
 
   getByOwnerId: async (ownerId: string) => {

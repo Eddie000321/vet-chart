@@ -13,6 +13,8 @@ const BillList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingBill, setEditingBill] = useState<Bill | null>(null);
+  const [viewingBill, setViewingBill] = useState<Bill | null>(null);
 
   useEffect(() => {
     fetchBills();
@@ -64,6 +66,20 @@ const BillList: React.FC = () => {
     setShowForm(false);
   };
 
+  const handleBillUpdated = (updatedBill: Bill) => {
+    setBills(prev => prev.map(bill => 
+      bill.id === updatedBill.id ? updatedBill : bill
+    ));
+    setEditingBill(null);
+  };
+
+  const handleEditBill = (bill: Bill) => {
+    setEditingBill(bill);
+  };
+
+  const handleViewBill = (bill: Bill) => {
+    setViewingBill(bill);
+  };
   const getStatusColor = (status: Bill['status']) => {
     switch (status) {
       case 'draft':
@@ -184,6 +200,7 @@ const BillList: React.FC = () => {
                   
                   <div className="flex space-x-1">
                     <button
+                      onClick={() => handleViewBill(bill)}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                       title="View bill"
                     >
@@ -191,6 +208,7 @@ const BillList: React.FC = () => {
                     </button>
                     
                     <button
+                      onClick={() => handleEditBill(bill)}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                       title="Edit bill"
                     >
@@ -291,6 +309,27 @@ const BillList: React.FC = () => {
         <BillForm
           onClose={() => setShowForm(false)}
           onBillAdded={handleBillAdded}
+        />
+      )}
+
+      {/* Bill Edit Form Modal */}
+      {editingBill && (
+        <BillForm
+          onClose={() => setEditingBill(null)}
+          onBillAdded={handleBillUpdated}
+          editingBill={editingBill}
+        />
+      )}
+
+      {/* Bill View Modal */}
+      {viewingBill && (
+        <BillViewModal
+          bill={viewingBill}
+          onClose={() => setViewingBill(null)}
+          onEdit={() => {
+            setEditingBill(viewingBill);
+            setViewingBill(null);
+          }}
         />
       )}
     </div>
