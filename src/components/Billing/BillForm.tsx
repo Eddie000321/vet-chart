@@ -460,30 +460,62 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
                     
                     {/* Quick Add Dropdown */}
                     {showQuickAdd === index && configurableItems.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                        {configurableItems.map((configItem) => (
-                          <div
-                            key={configItem.id}
-                            onClick={() => handleQuickAddItem(configItem, index)}
-                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                          >
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <div className="font-medium text-gray-900 text-sm">
-                                  {configItem.name}
-                                </div>
-                                {configItem.category && (
-                                  <div className="text-xs text-gray-500">
-                                    {configItem.category}
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                        {(() => {
+                          // Group items by category
+                          const groupedItems = configurableItems.reduce((acc, item) => {
+                            const category = item.category || 'Other';
+                            if (!acc[category]) {
+                              acc[category] = [];
+                            }
+                            acc[category].push(item);
+                            return acc;
+                          }, {} as Record<string, ConfigurableBillItem[]>);
+
+                          const getCategoryColor = (category: string) => {
+                            const colors = {
+                              'Examination': 'bg-blue-100 text-blue-700 border-blue-200',
+                              'Vaccination': 'bg-green-100 text-green-700 border-green-200',
+                              'Surgery': 'bg-red-100 text-red-700 border-red-200',
+                              'Dental': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                              'Laboratory': 'bg-purple-100 text-purple-700 border-purple-200',
+                              'Medication': 'bg-pink-100 text-pink-700 border-pink-200',
+                              'Emergency': 'bg-orange-100 text-orange-700 border-orange-200',
+                              'Grooming': 'bg-cyan-100 text-cyan-700 border-cyan-200',
+                              'Other': 'bg-gray-100 text-gray-700 border-gray-200'
+                            };
+                            return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-700 border-gray-200';
+                          };
+
+                          return Object.entries(groupedItems).map(([category, categoryItems]) => (
+                            <div key={category}>
+                              {/* Category Header */}
+                              <div className={`px-4 py-2 text-xs font-medium border-b border-gray-200 sticky top-0 z-10 ${getCategoryColor(category)}`}>
+                                {category} ({categoryItems.length} item{categoryItems.length !== 1 ? 's' : ''})
+                              </div>
+                              
+                              {/* Category Items */}
+                              {categoryItems.map((configItem) => (
+                                <div
+                                  key={configItem.id}
+                                  onClick={() => handleQuickAddItem(configItem, index)}
+                                  className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                >
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex-1">
+                                      <div className="font-medium text-gray-900 text-sm">
+                                        {configItem.name}
+                                      </div>
+                                    </div>
+                                    <div className="text-sm font-medium text-green-600 ml-2">
+                                      ${configItem.price.toFixed(2)}
+                                    </div>
                                   </div>
-                                )}
-                              </div>
-                              <div className="text-sm font-medium text-green-600">
-                                ${configItem.price.toFixed(2)}
-                              </div>
+                                </div>
+                              ))}
                             </div>
-                          </div>
-                        ))}
+                          ));
+                        })()}
                       </div>
                     )}
                   </div>
