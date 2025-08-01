@@ -22,7 +22,8 @@ const PatientForm: React.FC<PatientFormProps> = ({ onClose, onPatientAdded, onPa
     ownerId: editingPatient?.ownerId || preSelectedOwnerId || '',
     weightUnit: editingPatient?.weightUnit || 'lbs' as 'lbs' | 'kg',
     status: editingPatient?.status || 'active' as 'active' | 'inactive',
-    assignedDoctor: editingPatient?.assignedDoctor || ''
+    assignedDoctor: editingPatient?.assignedDoctor || '',
+    handlingDifficulty: editingPatient?.handlingDifficulty || '' as '' | 'easy' | 'medium' | 'hard'
   });
   const [owners, setOwners] = useState<Owner[]>([]);
   const [filteredOwners, setFilteredOwners] = useState<Owner[]>([]);
@@ -317,6 +318,23 @@ const PatientForm: React.FC<PatientFormProps> = ({ onClose, onPatientAdded, onPa
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Handling Difficulty
+            </label>
+            <select
+              name="handlingDifficulty"
+              value={formData.handlingDifficulty}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              <option value="">Select Difficulty (Optional)</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
             </select>
           </div>
           

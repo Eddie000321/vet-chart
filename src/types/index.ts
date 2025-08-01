@@ -22,7 +22,7 @@ export interface Patient {
   owner?: Owner;
   assignedDoctor?: string;
   status: 'active' | 'inactive';
-  status: 'active' | 'inactive';
+  handlingDifficulty?: 'easy' | 'medium' | 'hard';
   createdAt: string;
 }
 

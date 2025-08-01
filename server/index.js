@@ -147,6 +147,7 @@ const initDB = async () => {
       weightUnit: 'lbs',
       ownerId: owner1Id,
       assignedDoctor: 'J Han',
+      handlingDifficulty: 'easy',
       createdAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -161,6 +162,7 @@ const initDB = async () => {
       weightUnit: 'lbs',
       ownerId: owner1Id,
       assignedDoctor: 'J Lee',
+      handlingDifficulty: 'medium',
       createdAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -175,6 +177,7 @@ const initDB = async () => {
       weightUnit: 'lbs',
       ownerId: owner2Id,
       assignedDoctor: 'J Han',
+      handlingDifficulty: 'hard',
       createdAt: new Date(Date.now() - 23 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -189,6 +192,7 @@ const initDB = async () => {
       weightUnit: 'lbs',
       ownerId: owner3Id,
       assignedDoctor: 'Sarah Wilson',
+      handlingDifficulty: 'easy',
       createdAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -203,6 +207,7 @@ const initDB = async () => {
       weightUnit: 'lbs',
       ownerId: owner4Id,
       assignedDoctor: 'J Lee',
+      handlingDifficulty: 'medium',
       createdAt: new Date(Date.now() - 13 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -217,6 +222,7 @@ const initDB = async () => {
       weightUnit: 'lbs',
       ownerId: owner5Id,
       assignedDoctor: 'Michael Brown',
+      handlingDifficulty: 'easy',
       createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -231,6 +237,7 @@ const initDB = async () => {
       weightUnit: 'lbs',
       ownerId: owner3Id,
       assignedDoctor: 'Sarah Wilson',
+      handlingDifficulty: 'hard',
       createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
     });
     
@@ -574,7 +581,7 @@ app.get('/api/patients', authenticateToken, async (req, res) => {
 
 app.post('/api/patients', authenticateToken, async (req, res) => {
   try {
-    const { name, species, breed, age, gender, weight, ownerId, weightUnit, assignedDoctor } = req.body;
+    const { name, species, breed, age, gender, weight, ownerId, weightUnit, assignedDoctor, handlingDifficulty } = req.body;
     
     const newPatient = {
       id: uuidv4(),
@@ -588,6 +595,7 @@ app.post('/api/patients', authenticateToken, async (req, res) => {
       ownerId,
       assignedDoctor: assignedDoctor || '',
       status: 'active',
+      handlingDifficulty: handlingDifficulty || null,
       createdAt: new Date().toISOString()
     };
     
@@ -628,7 +636,7 @@ app.get('/api/patients/:id', authenticateToken, async (req, res) => {
 app.put('/api/patients/:id', authenticateToken, async (req, res) => {
   try {
     const patientId = req.params.id;
-    const { name, species, breed, age, gender, weight, ownerId, weightUnit, status, assignedDoctor } = req.body;
+    const { name, species, breed, age, gender, weight, ownerId, weightUnit, status, assignedDoctor, handlingDifficulty } = req.body;
     
     const patientIndex = db.patients.findIndex(p => p.id === patientId);
     
@@ -647,7 +655,8 @@ app.put('/api/patients/:id', authenticateToken, async (req, res) => {
       ownerId,
       weightUnit: weightUnit || 'lbs',
       status: status || db.patients[patientIndex].status || 'active',
-      assignedDoctor: assignedDoctor || ''
+      assignedDoctor: assignedDoctor || '',
+      handlingDifficulty: handlingDifficulty || null
     };
     
     db.patients[patientIndex] = updatedPatient;

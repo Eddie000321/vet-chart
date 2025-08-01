@@ -115,6 +115,32 @@ const PatientList: React.FC = () => {
     return colors[species as keyof typeof colors] || 'bg-gray-100 text-gray-600';
   };
 
+  const getHandlingDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'easy':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'hard':
+        return 'bg-red-100 text-red-700 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
+  const getHandlingDifficultyIcon = (difficulty: string) => {
+    switch (difficulty) {
+      case 'easy':
+        return '😊';
+      case 'medium':
+        return '😐';
+      case 'hard':
+        return '😤';
+      default:
+        return '';
+    }
+  };
+
   const convertWeight = (weight: number, fromUnit: string, toUnit: string) => {
     if (fromUnit === toUnit) return weight;
     if (fromUnit === 'lbs' && toUnit === 'kg') return weight * 0.453592;
@@ -215,6 +241,12 @@ const PatientList: React.FC = () => {
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSpeciesColor(patient.species)}`}>
                     {patient.species}
                   </span>
+                  
+                  {patient.handlingDifficulty && (
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getHandlingDifficultyColor(patient.handlingDifficulty)}`}>
+                      {getHandlingDifficultyIcon(patient.handlingDifficulty)} {patient.handlingDifficulty.charAt(0).toUpperCase() + patient.handlingDifficulty.slice(1)}
+                    </span>
+                  )}
                   
                   <div className="flex space-x-1">
                     <button
