@@ -153,19 +153,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
-    // Use a timeout to prevent flickering when moving between child elements
-    setTimeout(() => {
-      if (!e.currentTarget) return;
-      
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const x = e.clientX;
-      const y = e.clientY;
-      
-      if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-        setDragOverSlot(null);
-      }
-    }, 10);
+    // When leaving a drop target, clear the dragOverSlot.
+    // The handleDragEnter of the next target will set it if applicable.
+    setDragOverSlot(null);
+    console.log('DRAG LEAVE: Cleared dragOverSlot');
   };
 
   const handleDrop = async (e: React.DragEvent, targetDate: Date, targetTime: string, targetDoctor?: string) => {
@@ -174,6 +165,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     setDragOverSlot(null);
 
     if (!draggedAppointment) return;
+    console.log('DROP EVENT: Target:', { targetDate, targetTime, targetDoctor, draggedAppointmentId: draggedAppointment.id });
 
     // Ensure we format the date correctly for the API
     const newDate = format(targetDate, 'yyyy-MM-dd');
@@ -221,6 +213,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       });
       
       console.log('Appointment updated successfully:', updatedAppointment);
+      // Optionally, add a success message here for user feedback
       onAppointmentUpdated?.(updatedAppointment);
     } catch (error) {
       console.error('Failed to update appointment:', error);
@@ -325,6 +318,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                     data-day={format(currentDate, 'yyyy-MM-dd')}
                     data-time={time}
                     data-doctor={doctor}
+                    data-appointment-id={appointment.id} // Add data attribute for debugging
                   >
                     <div className="space-y-1 max-h-full overflow-y-auto relative z-10">
                       {doctorAppointments.map((appointment) => {
@@ -442,6 +436,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                               onDragEnd={handleDragEnd}
                               onClick={() => onAppointmentClick(appointment)}
                               data-appointment-id={appointment.id}
+                              data-doctor={appointment.veterinarian} // Add doctor data attribute
                             >
                               <p className={`text-xs font-medium ${doctorColor.text} truncate`}>
                                 {appointment.patient?.name}
