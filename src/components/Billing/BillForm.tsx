@@ -3,6 +3,7 @@ import { X, Search, ChevronDown, Plus, Trash2, Zap } from 'lucide-react';
 import { Bill, BillItem, Owner, Patient, MedicalRecord } from '../../types';
 import { billsAPI, ownersAPI, patientsAPI, recordsAPI } from '../../services/api';
 import { ConfigurableBillItem } from './BillItemSettingsModal';
+import MultiSelectConfiguredItemsModal from './MultiSelectConfiguredItemsModal';
 
 interface BillFormProps {
   onClose: () => void;
@@ -43,6 +44,7 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
   const [error, setError] = useState('');
   const [showQuickAdd, setShowQuickAdd] = useState<number | null>(null);
   const [showAddItemDropdown, setShowAddItemDropdown] = useState(false);
+  const [showMultiSelectModal, setShowMultiSelectModal] = useState(false);
 
   useEffect(() => {
     fetchOwners();
@@ -240,6 +242,19 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
     setTimeout(() => {
       setShowQuickAdd(newIndex);
     }, 100);
+  };
+
+  const handleMultiSelectItems = (selectedItems: ConfigurableBillItem[]) => {
+    const newItems = selectedItems.map(configItem => ({
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      description: configItem.name,
+      quantity: 1,
+      unitPrice: configItem.price,
+      totalPrice: configItem.price
+    }));
+    
+    setItems(prev => [...prev, ...newItems]);
+    setShowMultiSelectModal(false);
   };
 
   const removeItem = (index: number) => {
@@ -448,11 +463,11 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
                 </button>
                 <button
                   type="button"
-                  onClick={addConfiguredItem}
+                  onClick={() => setShowMultiSelectModal(true)}
                   className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors text-sm"
                 >
                   <Zap className="w-4 h-4" />
-                  <span>Add Configured Item</span>
+                  <span>Add Configured Items</span>
                 </button>
               </div>
             </div>
@@ -718,6 +733,15 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill, 
             </button>
           </div>
         </form>
+
+        {/* Multi-Select Configured Items Modal */}
+        {showMultiSelectModal && (
+          <MultiSelectConfiguredItemsModal
+            configurableItems={configurableItems}
+            onClose={() => setShowMultiSelectModal(false)}
+            onAddItems={handleMultiSelectItems}
+          />
+        )}
       </div>
     </div>
   );
