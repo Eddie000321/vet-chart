@@ -8,29 +8,89 @@ generator client {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
-  email       String   @unique
-  name        String?
-  password    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  firstName String
+  lastName  String
+  password  String
+  roles     String[] // Array of roles: veterinarian, staff, admin
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Owner {
+  id        String    @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String    @unique
+  phone     String
+  address   String
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // Relations
+  patients  Patient[]
+  bills     Bill[]
 }
 
 model Patient {
-  id          Int      @id @default(autoincrement())
-  name        String
-  ownerId     Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String    @id @default(cuid())
+  name               String
+  species            String
+  breed              String
+  age                Int
+  gender             String    // Male or Female
+  weight             Float
+  weightUnit         String?   @default("lbs") // lbs or kg
+  status             String    @default("active") // active or inactive
+  assignedDoctor     String?
+  handlingDifficulty String?   // easy, medium, hard
+  ownerId            String
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  
+  // Relations
+  owner            Owner           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  appointments     Appointment[]
+  medicalRecords   MedicalRecord[]
+  bills            Bill[]
+}
+
+model MedicalRecord {
+  id           String   @id @default(cuid())
+  patientId    String
+  visitDate    DateTime
+  recordType   String   @default("treatment") // vaccine, surgery, treatment, dental
+  symptoms     String
+  diagnosis    String
+  treatment    String
+  notes        String?
+  veterinarian String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 }
 
 model Appointment {
-  id          Int      @id @default(autoincrement())
-  patientId   Int
-  startTime   DateTime
-  endTime     DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  patientId    String
+  date         DateTime
+  time         String   // Format: "HH:MM"
+  duration     Int      // Duration in minutes
+  reason       String
+  status       String   @default("scheduled") // scheduled, completed, cancelled, no-show
+  notes        String?
+  veterinarian String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bills   Bill[]
 }
 
 model Bill {
@@ -50,4 +110,9 @@ model Bill {
   notes             String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  
+  // Relations
+  owner       Owner        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  patient     Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
 }
