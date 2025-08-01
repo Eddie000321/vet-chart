@@ -72,6 +72,12 @@ const AppointmentList: React.FC = () => {
     setShowEditForm(false);
   };
 
+  const handleAppointmentDeleted = (appointmentId: string) => {
+    setAppointments(prev => prev.filter(appointment => appointment.id !== appointmentId));
+    setEditingAppointment(null);
+    setShowEditForm(false);
+  };
+
   const handleEditAppointment = (appointment: Appointment) => {
     setEditingAppointment(appointment);
     setShowEditForm(true);
@@ -388,6 +394,7 @@ const AppointmentList: React.FC = () => {
             setEditingAppointment(null);
           }}
           onAppointmentUpdated={handleAppointmentUpdated}
+          onAppointmentDeleted={handleAppointmentDeleted}
         />
       )}
 

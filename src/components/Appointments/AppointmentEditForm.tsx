@@ -9,9 +9,10 @@ interface AppointmentEditFormProps {
   appointment: Appointment;
   onClose: () => void;
   onAppointmentUpdated: (appointment: Appointment) => void;
+  onAppointmentDeleted?: (appointmentId: string) => void;
 }
 
-const AppointmentEditForm: React.FC<AppointmentEditFormProps> = ({ appointment, onClose, onAppointmentUpdated }) => {
+const AppointmentEditForm: React.FC<AppointmentEditFormProps> = ({ appointment, onClose, onAppointmentUpdated, onAppointmentDeleted }) => {
   const { user } = useAuth();
   const { generateTimeSlots } = useBusinessHours();
   const [formData, setFormData] = useState({
@@ -30,6 +31,7 @@ const AppointmentEditForm: React.FC<AppointmentEditFormProps> = ({ appointment, 
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   const [selectedPatientName, setSelectedPatientName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
 
@@ -109,6 +111,25 @@ const AppointmentEditForm: React.FC<AppointmentEditFormProps> = ({ appointment, 
     if (e.target.value === '') {
       setFormData(prev => ({ ...prev, patientId: '' }));
       setSelectedPatientName('');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this appointment? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeleting(true);
+    setError('');
+
+    try {
+      await appointmentsAPI.delete(appointment.id);
+      onAppointmentDeleted?.(appointment.id);
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete appointment');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -302,7 +323,24 @@ const AppointmentEditForm: React.FC<AppointmentEditFormProps> = ({ appointment, 
             />
           </div>
 
-          <div className="flex space-x-3 pt-4">
+          <div className="flex justify-between pt-4">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting || loading}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
+            >
+              {deleting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <span>Delete Appointment</span>
+              )}
+            </button>
+            
+            <div className="flex space-x-3">
             <button
               type="button"
               onClick={onClose}
@@ -317,6 +355,7 @@ const AppointmentEditForm: React.FC<AppointmentEditFormProps> = ({ appointment, 
             >
               {loading ? 'Updating...' : 'Update Appointment'}
             </button>
+            </div>
           </div>
         </form>
       </div>
