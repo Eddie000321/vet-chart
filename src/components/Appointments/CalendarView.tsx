@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Clock, User, PawPrint, Edit, Trash2, CheckCircle, XCircle, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, User, PawPrint, Edit, Trash2, CheckCircle, XCircle, Filter, Plus } from 'lucide-react';
 import { Appointment } from '../../types';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, getDay, setMonth, setYear, getMonth, getYear } from 'date-fns';
 import { useBusinessHours } from '../../hooks/useBusinessHours';
@@ -213,7 +213,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                 return (
                   <div 
                     key={time} 
-                    className="h-16 border-b border-gray-100 p-1 relative overflow-hidden"
+                    className="h-16 border-b border-gray-100 p-1 relative overflow-hidden group"
                   >
                     <div className="space-y-1 max-h-full overflow-y-auto relative z-10">
                       {doctorAppointments.map((appointment) => {
@@ -247,6 +247,24 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                         </div>
                       )}
                     </div>
+                    
+                    {/* Add Appointment Button - Always visible */}
+                    <button
+                      onClick={() => {
+                        setNewAppointmentDefaults({
+                          date: format(currentDate, 'yyyy-MM-dd'),
+                          time: time,
+                          veterinarian: doctor
+                        });
+                        setShowAddAppointmentForm(true);
+                      }}
+                      className="absolute inset-0 w-full h-full bg-transparent hover:bg-blue-50 hover:bg-opacity-50 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 z-0"
+                      title={`Add appointment at ${time} for Dr. ${doctor}`}
+                    >
+                      <div className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1 shadow-md">
+                        <Plus className="w-3 h-3" />
+                      </div>
+                    </button>
                   </div>
                 );
               })}
@@ -293,7 +311,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                   return (
                     <div 
                       key={time} 
-                      className="h-16 border-b border-gray-100 p-1 relative"
+                      className="h-16 border-b border-gray-100 p-1 relative group"
                     >
                       <div className="space-y-1 max-h-full overflow-y-auto relative z-10">
                         {slotAppointments.map((appointment) => {
@@ -324,6 +342,24 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                           </div>
                         )}
                       </div>
+                      
+                      {/* Add Appointment Button - Always visible */}
+                      <button
+                        onClick={() => {
+                          setNewAppointmentDefaults({
+                            date: format(day, 'yyyy-MM-dd'),
+                            time: time,
+                            veterinarian: ''
+                          });
+                          setShowAddAppointmentForm(true);
+                        }}
+                        className="absolute inset-0 w-full h-full bg-transparent hover:bg-blue-50 hover:bg-opacity-50 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 z-0"
+                        title={`Add appointment at ${time} on ${format(day, 'MMM d')}`}
+                      >
+                        <div className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1 shadow-md">
+                          <Plus className="w-3 h-3" />
+                        </div>
+                      </button>
                     </div>
                   );
                 })}
@@ -366,8 +402,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             return (
               <div 
                 key={day.toISOString()} 
-                className="h-32 border border-gray-200 p-2 overflow-y-auto cursor-pointer hover:bg-gray-50 transition-colors"
-                onClick={() => onDayClick?.(day)}
+                className="h-32 border border-gray-200 p-2 overflow-y-auto relative group"
               >
                 <div className={`text-sm font-medium mb-2 ${
                   isToday ? 'text-blue-600' : 'text-gray-900'
@@ -400,6 +435,24 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                     </div>
                   )}
                 </div>
+                
+                {/* Add Appointment Button for Month View */}
+                <button
+                  onClick={() => {
+                    setNewAppointmentDefaults({
+                      date: format(day, 'yyyy-MM-dd'),
+                      time: '',
+                      veterinarian: ''
+                    });
+                    setShowAddAppointmentForm(true);
+                  }}
+                  className="absolute inset-0 w-full h-full bg-transparent hover:bg-blue-50 hover:bg-opacity-30 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100"
+                  title={`Add appointment on ${format(day, 'MMM d, yyyy')}`}
+                >
+                  <div className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 shadow-lg">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                </button>
               </div>
             );
           })}
