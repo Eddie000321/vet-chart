@@ -2,11 +2,15 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { PrismaClient } = require('@prisma/client');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// Initialize Prisma Client
+const prisma = new PrismaClient();
 
 // Middleware
 app.use(cors());

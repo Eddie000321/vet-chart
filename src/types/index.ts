@@ -40,6 +40,37 @@ export interface MedicalRecord {
   createdAt: string;
 }
 
+export interface BillItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface Bill {
+  id: string;
+  billNumber: string;
+  ownerId: string;
+  owner?: Owner;
+  patientId: string;
+  patient?: Patient;
+  appointmentId?: string;
+  appointment?: Appointment;
+  medicalRecordIds: string[];
+  medicalRecords?: MedicalRecord[];
+  items: BillItem[];
+  subtotal: number;
+  tax: number;
+  totalAmount: number;
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  billDate: string;
+  dueDate: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
   username: string;

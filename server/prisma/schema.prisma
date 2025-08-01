@@ -32,3 +32,22 @@ model Appointment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model Bill {
+  id                String   @id @default(cuid())
+  billNumber        String   @unique
+  ownerId           String
+  patientId         String
+  appointmentId     String?
+  medicalRecordIds  String[] // Array of medical record IDs
+  items             Json     // JSON array of BillItem objects
+  subtotal          Float
+  tax               Float
+  totalAmount       Float
+  status            String   @default("draft") // draft, sent, paid, overdue, cancelled
+  billDate          DateTime @default(now())
+  dueDate           DateTime
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
