@@ -20,7 +20,7 @@ const BillForm: React.FC<BillFormProps> = ({ onClose, onBillAdded, editingBill }
   });
   
   const [items, setItems] = useState<BillItem[]>([
-    editingBill?.items || { id: '1', description: '', quantity: 1, unitPrice: 0, totalPrice: 0 }
+    ...(editingBill?.items || [{ id: '1', description: '', quantity: 1, unitPrice: 0, totalPrice: 0 }])
   ]);
   
   const [owners, setOwners] = useState<Owner[]>([]);
