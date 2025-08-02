@@ -1,86 +1,147 @@
-# Vet Chart - Animal Hospital EMR System
+# VetChart EMR System
 
-## Table of Contents
-
-- [Introduction](#introduction)
-- [Features](#features)
-- [Technologies Used](#technologies-used)
-- [Setup and Installation](#setup-and-installation)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
-
-## Introduction
-
-Vet Chart is an Electronic Medical Records (EMR) system specifically designed for animal hospitals and veterinary clinics. It provides a comprehensive platform to manage patient and owner information, medical records, appointments, and offers insightful dashboard analytics to streamline clinic operations.
+VetChart is a comprehensive Electronic Medical Records (EMR) system designed for veterinary clinics. It provides tools for managing appointments, patient records, billing, and clinic performance.
 
 ## Features
 
-- **User Authentication**: Secure login system with different roles (veterinarian, staff, admin).
-- **Dashboard Overview**: Personalized dashboards for clinic management and individual doctors, showing key statistics and quick actions.
-- **Owner Management**: Full CRUD (Create, Read, Update, Delete) functionality for pet owners, including viewing their registered pets.
-- **Patient Management**: Full CRUD functionality for animal patients, including managing their active/inactive status.
-- **Medical Records**: Comprehensive management of medical records, including symptoms, diagnosis, treatment, and notes.
-  - **PDF Generation**: Ability to print and download individual or multiple medical records as a combined PDF file.
-- **Appointment Scheduling**: Create, view, edit, and manage appointments with various calendar views (day, week, month).
-  - **Drag-and-Drop Rescheduling**: Easily reschedule appointments by dragging and dropping them in the weekly schedule.
-  - **Business Hours Configuration**: Customizable clinic operating hours and appointment intervals.
-- **Hospital Member Management**: View and manage staff and veterinarian details.
-- **Clinic Analytics**: Overview of clinic performance, earnings, appointments, and doctor-specific statistics.
+-   **Appointment Management:** Schedule, view, and edit appointments.
+-   **Patient Management:** Create and manage patient profiles, including medical history.
+-   **Owner Management:** Keep track of pet owners and their associated pets.
+-   **Billing:** Generate and manage bills for services.
+-   **Medical Records:** Create, view, and update patient medical records.
+-   **Authentication:** Secure user login.
+-   **Clinic Dashboard:** Overview of clinic performance and statistics.
 
 ## Technologies Used
 
-- **Frontend**:
-  - React (JavaScript library for building user interfaces)
-  - TypeScript (Superset of JavaScript that adds static types)
-  - Vite (Fast development build tool)
-  - Tailwind CSS (Utility-first CSS framework)
-  - Lucide React (Icon library)
-  - date-fns (Date utility library)
-  - html2canvas & jspdf (For client-side PDF generation)
-- **Backend**:
-  - Node.js (JavaScript runtime environment)
-  - Express.js (Web application framework)
-  - bcryptjs (For password hashing)
-  - jsonwebtoken (For user authentication)
-  - cors (Middleware for enabling Cross-Origin Resource Sharing)
-  - uuid (For generating unique IDs)
-- **Database**:
-  - PostgreSQL (Object-relational database system)
-  - Prisma (Next-generation ORM for Node.js and TypeScript)
+**Frontend:**
 
-## Setup and Installation
+-   React
+-   TypeScript
+-   Vite
+-   Tailwind CSS
 
-To get the Vet Chart system up and running, follow these steps:
+**Backend:**
 
-### Prerequisites
+-   Node.js
+-   Express.js
+-   Prisma (ORM)
 
-- Docker
-- Docker Compose
+**Database:**
 
-### 1. Clone the Repository
+-   PostgreSQL
+
+**Other:**
+
+-   Docker & Docker Compose
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your machine:
+
+-   Node.js (LTS version recommended)
+-   npm (comes with Node.js) or Yarn
+-   Docker Desktop (includes Docker Compose)
+
+## Installation
+
+Follow these steps to get the VetChart EMR System up and running on your local machine.
+
+1.  **Clone the repository:**
+
+    ```bash
+    git clone https://github.com/your-username/vet-chart.git
+    cd vet-chart
+    ```
+
+2.  **Set up the Backend and Database:**
+
+    Navigate to the `server` directory and install dependencies:
+
+    ```bash
+    cd server
+    npm install
+    ```
+
+    Start the database and backend services using Docker Compose. This will also build the backend Docker image.
+
+    ```bash
+    docker-compose up -d
+    ```
+
+    Run Prisma migrations to set up your database schema:
+
+    ```bash
+    npx prisma migrate dev --name init
+    ```
+
+    Return to the project root directory:
+
+    ```bash
+    cd ..
+    ```
+
+3.  **Set up the Frontend:**
+
+    Install frontend dependencies:
+
+    ```bash
+    npm install
+    ```
+
+## Running the Application
+
+To run the full-stack application (frontend and backend):
 
 ```bash
-git clone https://github.com/Eddie000321/vet-chart.git
-cd vetchart-emr-system
+npm run dev:full
 ```
 
-### 2. Run with Docker Compose
+This command will concurrently start both the backend server (on `http://localhost:3001`) and the frontend development server (typically on `http://localhost:5173`).
+
+Alternatively, you can run them separately:
+
+**Run Backend Only:**
 
 ```bash
-docker-compose up -d
+cd server
+npm run dev
 ```
 
-The application will be accessible at `http://localhost:5173`.
+**Run Frontend Only:**
+
+```bash
+npm run dev
+```
 
 ## Usage
 
-Once the setup is complete, you can access the application through your web browser. The system provides an intuitive interface for managing all aspects of veterinary clinic operations.
+Once the application is running, open your web browser and navigate to the address provided by the frontend development server (e.g., `http://localhost:5173`). You should see the VetChart login page.
+
+## Project Structure
+
+```
+vet-chart/
+├───server/             # Backend (Node.js, Express.js, Prisma)
+│   ├───prisma/         # Prisma schema and migrations
+│   └───...
+├───src/                # Frontend (React, TypeScript)
+│   ├───components/     # Reusable UI components
+│   ├───contexts/       # React Contexts
+│   ├───hooks/          # Custom React hooks
+│   ├───lib/            # Utility functions
+│   ├───services/       # API service integrations
+│   ├───types/          # TypeScript type definitions
+│   └───...
+├───public/             # Static assets
+├───...
+└───docker-compose.yml  # Docker Compose configuration
+```
 
 ## Contributing
 
-We welcome contributions to improve Vet Chart! Please feel free to submit issues, feature requests, or pull requests.
+Contributions are welcome! Please see the `CONTRIBUTING.md` for details on how to contribute.
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the `LICENSE` file for details.
