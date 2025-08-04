@@ -2,6 +2,8 @@
 
 VetChart is a comprehensive Electronic Medical Records (EMR) system designed for veterinary clinics. It provides tools for managing appointments, patient records, billing, and clinic performance.
 
+## Overview
+
 ## Features
 
 -   **Appointment Management:** Schedule, view, and edit appointments.
