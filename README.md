@@ -54,7 +54,7 @@ Follow these steps to get the VetChart EMR System up and running on your local m
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/your-username/vet-chart.git
+    git clone https://github.com/Eddie000321/vet-chart.git
     cd vet-chart
     ```
 
