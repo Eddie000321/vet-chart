@@ -8,6 +8,10 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
+## Overview
+
+https://github.com/user-attachments/assets/47b17f21-94da-4dab-8e8c-6eb4d71cba43
+
 VetChart is a comprehensive, production-ready Electronic Medical Records (EMR) system designed for veterinary clinics. This full-stack web application demonstrates modern software development practices, clean architecture, and enterprise-level features.
 
 ## 🚀 Key Features & Technical Highlights
@@ -69,7 +73,7 @@ Follow these steps to get the VetChart EMR System up and running on your local m
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/your-username/vet-chart.git
+    git clone https://github.com/Eddie000321/vet-chart.git
     cd vet-chart
     ```
 
@@ -170,6 +174,9 @@ vet-chart/
 ├───...
 └───docker-compose.yml  # Docker Compose configuration
 ```
+## Database Structure(img need update)
+<img width="1085" height="1168" alt="Screenshot 2025-07-31 at 9 35 35 PM" src="https://github.com/user-attachments/assets/22581ff2-84d5-4747-bd71-33e28c387163" />
+
 
 ## 🎯 Development Experience & Learning Outcomes
 
