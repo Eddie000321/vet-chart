@@ -1,16 +1,63 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
+const morgan = require('morgan');
+const promClient = require('prom-client');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  console.error('Missing required env JWT_SECRET. Set it in server/.env or environment.');
+  process.exit(1);
+}
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(morgan('combined'));
+
+// Basic health endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Prometheus metrics
+const register = new promClient.Registry();
+promClient.collectDefaultMetrics({ register });
+
+const httpRequestDurationSeconds = new promClient.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'code'],
+  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5]
+});
+register.registerMetric(httpRequestDurationSeconds);
+
+app.use((req, res, next) => {
+  const end = httpRequestDurationSeconds.startTimer({ method: req.method });
+  res.on('finish', () => {
+    end({ code: String(res.statusCode) });
+  });
+  next();
+});
+
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch (e) {
+    res.status(500).end(e.message);
+  }
+});
 
 // Add a root route for testing
 app.get('/', (req, res) => {

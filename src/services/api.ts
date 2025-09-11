@@ -214,7 +214,7 @@ export const dashboardAPI = {
 };
 
 // Bills API
-export const billsAPI = {
+export const billsAPI_MOCK = {
   getAll: async () => {
     // Temporary mock data for demonstration
     return Promise.resolve([
@@ -611,6 +611,63 @@ export const billsAPI = {
   delete: async (id: string) => {
     // Simulate API call for deleting bill
     return Promise.resolve({ success: true });
+  },
+
+  getByOwnerId: async (ownerId: string) => {
+    const response = await fetch(`${API_BASE_URL}/bills/owner/${ownerId}`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
+  },
+
+  getByPatientId: async (patientId: string) => {
+    const response = await fetch(`${API_BASE_URL}/bills/patient/${patientId}`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
+  }
+};
+
+// Bills API (real backend integration)
+export const billsAPI = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/bills`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
+  },
+
+  create: async (billData: any) => {
+    const response = await fetch(`${API_BASE_URL}/bills`, {
+      method: POST,
+      headers: getAuthHeaders(),
+      body: JSON.stringify(billData)
+    });
+    return handleResponse(response);
+  },
+
+  getById: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/bills/${id}`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
+  },
+
+  update: async (id: string, billData: any) => {
+    const response = await fetch(`${API_BASE_URL}/bills/${id}`, {
+      method: PUT,
+      headers: getAuthHeaders(),
+      body: JSON.stringify(billData)
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/bills/${id}`, {
+      method: DELETE,
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
   },
 
   getByOwnerId: async (ownerId: string) => {

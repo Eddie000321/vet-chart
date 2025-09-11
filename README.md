@@ -137,6 +137,22 @@ npm run dev
 npm run dev
 ```
 
+### Environment Variables
+
+- Backend requires `JWT_SECRET` to start.
+  - Local setup: add it to `server/.env`, for example `JWT_SECRET=dev-change-me`
+  - Port: backend listens on `3001` by default; Dockerfile exposes `3001`.
+
+#### Ports and proxy
+- When running backend via Docker Compose, the container port `3001` is mapped to host `3002` (see `docker-compose.yml`).
+- For frontend dev to point to the Docker backend, set `VITE_API_TARGET=http://localhost:3002` in the root `.env`.
+- For local Node backend, use the default `VITE_API_TARGET=http://localhost:3001` (or omit to use default).
+
+### Health & Metrics
+
+- Health check: `GET http://localhost:3001/api/health`
+- Prometheus metrics: `GET http://localhost:3001/metrics`
+
 ## 🖥️ Demo & Screenshots
 
 Once the application is running, open your web browser and navigate to the address provided by the frontend development server (e.g., `http://localhost:5173`). You should see the VetChart login page.
