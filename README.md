@@ -224,10 +224,10 @@ This project demonstrates proficiency in:
 
 ## 🔗 Links & Contact
 
-- **Live Demo**: *(Add your deployed application URL here)*
-- **Portfolio**: *(Add your portfolio website)*
-- **LinkedIn**: *(Add your LinkedIn profile)*
-- **Email**: *(Add your professional email)*
+- **Live Demo**: 
+- **Portfolio**: 
+- **LinkedIn**: 
+- **Email**: 
 
 ---
 
