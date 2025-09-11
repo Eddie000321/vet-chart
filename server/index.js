@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const morgan = require('morgan');
 const promClient = require('prom-client');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -30,6 +31,48 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Database health endpoint (PostgreSQL)
+// Configurable pool
+const PGPOOL_MAX = Number(process.env.PGPOOL_MAX || 10);
+const PGPOOL_IDLE = Number(process.env.PGPOOL_IDLE || 30000);
+const PGPOOL_CONN_TIMEOUT = Number(process.env.PGPOOL_CONN_TIMEOUT || 5000);
+const dbPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: PGPOOL_MAX,
+  idleTimeoutMillis: PGPOOL_IDLE,
+  connectionTimeoutMillis: PGPOOL_CONN_TIMEOUT,
+  ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : undefined,
+});
+
+app.get('/api/db/health', async (req, res) => {
+  const start = process.hrtime.bigint();
+  try {
+    const result = await dbPool.query('SELECT 1 as ok');
+    const durationMs = Number((process.hrtime.bigint() - start) / 1000000n);
+    if (typeof dbPingDurationMs !== 'undefined') {
+      dbPingDurationMs.observe(durationMs);
+      if (typeof dbPingSuccessTotal !== 'undefined') dbPingSuccessTotal.inc();
+    }
+    res.json({
+      status: 'ok',
+      latencyMs: durationMs,
+      result: result.rows[0],
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    const durationMs = Number((process.hrtime.bigint() - start) / 1000000n);
+    if (typeof dbPingDurationMs !== 'undefined') {
+      dbPingDurationMs.observe(durationMs);
+      if (typeof dbPingFailureTotal !== 'undefined') dbPingFailureTotal.inc();
+    }
+    res.status(503).json({
+      status: 'error',
+      latencyMs: durationMs,
+      error: err.message,
+    });
+  }
+});
+
 // Prometheus metrics
 const register = new promClient.Registry();
 promClient.collectDefaultMetrics({ register });
@@ -41,6 +84,24 @@ const httpRequestDurationSeconds = new promClient.Histogram({
   buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5]
 });
 register.registerMetric(httpRequestDurationSeconds);
+
+// DB health metrics
+const dbPingDurationMs = new promClient.Histogram({
+  name: 'db_ping_duration_ms',
+  help: 'Duration of DB health check in milliseconds',
+  buckets: [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000]
+});
+const dbPingSuccessTotal = new promClient.Counter({
+  name: 'db_ping_success_total',
+  help: 'Total successful DB health checks'
+});
+const dbPingFailureTotal = new promClient.Counter({
+  name: 'db_ping_failure_total',
+  help: 'Total failed DB health checks'
+});
+register.registerMetric(dbPingDurationMs);
+register.registerMetric(dbPingSuccessTotal);
+register.registerMetric(dbPingFailureTotal);
 
 app.use((req, res, next) => {
   const end = httpRequestDurationSeconds.startTimer({ method: req.method });
@@ -1850,6 +1911,46 @@ app.get('/api/bills/patient/:patientId', authenticateToken, async (req, res) => 
   } catch (error) {
     console.error('Error fetching bills by patient:', error);
     res.status(500).json({ message: 'Failed to fetch bills' });
+  }
+});
+
+// --- DB test endpoints (protected) ---
+let probeTableReady = false;
+async function ensureProbeTable() {
+  if (probeTableReady) return;
+  await dbPool.query(
+    'CREATE TABLE IF NOT EXISTS db_probes (id BIGSERIAL PRIMARY KEY, payload JSONB, created_at TIMESTAMPTZ DEFAULT now())'
+  );
+  probeTableReady = true;
+}
+
+app.post('/api/db/test-write', authenticateToken, async (req, res) => {
+  const count = Math.max(1, Math.min(1000, Number((req.query.count || (req.body && req.body.count)) || 1)));
+  const payloadSize = Math.max(0, Math.min(100000, Number((req.query.payloadSize || (req.body && req.body.payloadSize)) || 0)));
+  const payload = payloadSize > 0 ? { data: 'x'.repeat(payloadSize) } : { ok: true };
+  try {
+    await ensureProbeTable();
+    const start = process.hrtime.bigint();
+    for (let i = 0; i < count; i++) {
+      await dbPool.query('INSERT INTO db_probes (payload, created_at) VALUES ($1, now())', [payload]);
+    }
+    const durationMs = Number((process.hrtime.bigint() - start) / 1000000n);
+    res.json({ status: 'ok', inserted: count, latencyMs: durationMs });
+  } catch (err) {
+    res.status(500).json({ status: 'error', error: err.message });
+  }
+});
+
+app.get('/api/db/test-scan', authenticateToken, async (req, res) => {
+  const limit = Math.max(1, Math.min(1000, Number(req.query.limit || 50)));
+  try {
+    await ensureProbeTable();
+    const start = process.hrtime.bigint();
+    const result = await dbPool.query('SELECT id, created_at FROM db_probes ORDER BY id DESC LIMIT $1', [limit]);
+    const durationMs = Number((process.hrtime.bigint() - start) / 1000000n);
+    res.json({ status: 'ok', rows: result.rowCount, latencyMs: durationMs });
+  } catch (err) {
+    res.status(500).json({ status: 'error', error: err.message });
   }
 });
 

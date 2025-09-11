@@ -152,6 +152,12 @@ npm run dev
 
 - Health check: `GET http://localhost:3001/api/health`
 - Prometheus metrics: `GET http://localhost:3001/metrics`
+- Database health: `GET http://localhost:3001/api/db/health` (checks connectivity via `SELECT 1`)
+
+### Database Ops
+- Backup: `DATABASE_URL=postgres://user:password@localhost:5434/mydb ./scripts/db-backup.sh`
+- Restore: `DATABASE_URL=postgres://user:password@localhost:5434/mydb ./scripts/db-restore.sh backups/<file>.dump --force`
+- See `ops/backup-restore.md` and `ops/db-maintenance.md` for policies and maintenance playbooks.
 
 ## 🖥️ Demo & Screenshots
 
