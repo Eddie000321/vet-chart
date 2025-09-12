@@ -26,3 +26,6 @@ dist-ssr
 .bolt
 summary.md 
 guideline.md 
+
+ops/backup-restore.md
+ops/db-maintenance.md

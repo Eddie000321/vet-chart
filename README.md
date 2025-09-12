@@ -1,6 +1,6 @@
 # 🏥 VetChart EMR System
 
-> **A full-stack Electronic Medical Records (EMR) system built for veterinary clinics**
+> A full‑stack Electronic Medical Records (EMR) system for veterinary clinics
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
@@ -12,192 +12,182 @@
 
 https://github.com/user-attachments/assets/47b17f21-94da-4dab-8e8c-6eb4d71cba43
 
-VetChart is a comprehensive, production-ready Electronic Medical Records (EMR) system designed for veterinary clinics. This full-stack web application demonstrates modern software development practices, clean architecture, and enterprise-level features.
+VetChart is a pragmatic full‑stack EMR example for clinics. It focuses on clean UI/UX, a simple Express API, and operational practices (health checks, metrics, backup/restore, performance probes).
 
-## 🚀 Key Features & Technical Highlights
+> Current status
+>
+> - Backend stores clinic data in‑memory for demo. PostgreSQL is used for ops experiments (`/api/db/*`).
+> - Prisma schema exists (`server/prisma/schema.prisma`) but is not wired into runtime yet.
+> - Frontend uses TypeScript; backend is JavaScript (type‑safety end‑to‑end planned).
 
-### 🏗️ **Full-Stack Architecture**
--   **Appointment Management:** Calendar-based scheduling system with real-time updates
--   **Patient Management:** Comprehensive patient profiles with medical history tracking
--   **Owner Management:** Customer relationship management with pet associations
--   **Billing System:** Invoice generation with itemized billing and payment status tracking
--   **Medical Records:** Complete record-keeping with search, filtering, and audit trails
--   **Authentication & Authorization:** JWT-based secure login with role-based access control
--   **Analytics Dashboard:** Real-time clinic performance metrics and revenue tracking
+## 🚀 Features
 
-### 💡 **Technical Achievements**
--   **Type-Safe Development:** End-to-end TypeScript implementation
--   **RESTful API Design:** Clean, scalable backend architecture with proper error handling
--   **Component-Driven UI:** Reusable React components with consistent design system
--   **Database Design:** Normalized PostgreSQL schema with proper relationships and constraints
--   **Containerized Development:** Docker-based development environment for consistency
--   **Modern Build Tools:** Vite for lightning-fast development and optimized production builds
+### App Capabilities
+- Appointment scheduling with daily/weekly views
+- Patient and owner management with recent activity
+- Medical records with PDF export
+- Billing with itemized invoices
+- Authentication (JWT) and role‑aware UI
+- Dashboard with quick stats
 
-## 🛠️ Technology Stack
+### Technical Highlights
+- Clean REST API with JWT auth and request logging
+- Prometheus metrics (`/metrics`) and explicit DB health (`/api/db/health`)
+- Vite dev server with proxy and fast HMR
+- Docker Compose for repeatable local environments
 
-### **Frontend Development**
--   **React 18** - Modern functional components with hooks and Context API
--   **TypeScript** - Static type checking for enhanced code quality
--   **Vite** - Next-generation build tool with HMR and optimized bundling
--   **Tailwind CSS** - Utility-first CSS framework for responsive design
--   **Lucide React** - Modern icon library
+## 🛠️ Stack
 
-### **Backend Development**
--   **Node.js & Express.js** - Lightweight, fast REST API server
--   **Prisma ORM** - Type-safe database client with automated migrations
--   **JWT Authentication** - Secure token-based authentication
--   **bcryptjs** - Industry-standard password hashing
+### Frontend
+- React 18, TypeScript, Vite, Tailwind CSS, lucide-react
 
-### **Database & Infrastructure**
--   **PostgreSQL** - Production-grade relational database
--   **Docker & Docker Compose** - Containerized development and deployment
--   **API Proxy Configuration** - Seamless frontend-backend integration
+### Backend
+- Node.js, Express, jsonwebtoken, bcryptjs, morgan, prom-client, pg
+- Prisma schema prepared (not yet used at runtime)
 
-### **Development Tools**
--   **ESLint** - Code linting and style enforcement
--   **PostCSS** - CSS processing and optimization
--   **Concurrently** - Run multiple development servers simultaneously
+### Infrastructure & Tooling
+- PostgreSQL (Docker)
+- Docker & Docker Compose
+- ESLint, PostCSS, Concurrently
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed on your machine:
-
--   Node.js (LTS version recommended)
--   npm (comes with Node.js) or Yarn
--   Docker Desktop (includes Docker Compose)
+- Node.js (LTS recommended) and npm or Yarn
+- Docker Desktop (includes Docker Compose)
 
 ## Installation
 
-Follow these steps to get the VetChart EMR System up and running on your local machine.
-
-1.  **Clone the repository:**
-
-    ```bash
-    git clone https://github.com/Eddie000321/vet-chart.git
-    cd vet-chart
-    ```
-
-2.  **Set up the Backend and Database:**
-
-    Navigate to the `server` directory and install dependencies:
-
-    ```bash
-    cd server
-    npm install
-    ```
-
-    Start the database and backend services using Docker Compose. This will also build the backend Docker image.
-
-    ```bash
-    docker-compose up -d
-    ```
-
-    Run Prisma migrations to set up your database schema:
-
-    ```bash
-    npx prisma migrate dev --name init
-    ```
-
-    Return to the project root directory:
-
-    ```bash
-    cd ..
-    ```
-
-3.  **Set up the Frontend:**
-
-    Install frontend dependencies:
-
-    ```bash
-    npm install
-    ```
-
-## Running the Application
-
-To run the full-stack application (frontend and backend):
+1) Clone
 
 ```bash
-npm run dev:full
+git clone https://github.com/Eddie000321/vet-chart.git
+cd vet-chart
 ```
 
-This command will concurrently start both the backend server (on `http://localhost:3001`) and the frontend development server (typically on `http://localhost:5173`).
-
-Alternatively, you can run them separately:
-
-**Run Backend Only:**
+2) Backend deps
 
 ```bash
 cd server
-npm run dev
+npm install
 ```
 
-**Run Frontend Only:**
+3) Start database (choose one)
+
+- Local Compose (DB only for local Node server):
+
+  ```bash
+  cd ..
+  docker compose up -d db
+  ```
+
+- Full Compose (server + db):
+
+  ```bash
+  cd ..
+  docker compose up -d
+  # server: container 3001 → host 3002
+  ```
+
+4) Frontend deps (project root)
 
 ```bash
-npm run dev
+npm install
 ```
 
-### Environment Variables
+5) Optional: Prisma migrations (schema only)
 
-- Backend requires `JWT_SECRET` to start.
-  - Local setup: add it to `server/.env`, for example `JWT_SECRET=dev-change-me`
-  - Port: backend listens on `3001` by default; Dockerfile exposes `3001`.
+```bash
+cd server
+npx prisma migrate dev --name init
+cd ..
+```
 
-#### Ports and proxy
-- When running backend via Docker Compose, the container port `3001` is mapped to host `3002` (see `docker-compose.yml`).
-- For frontend dev to point to the Docker backend, set `VITE_API_TARGET=http://localhost:3002` in the root `.env`.
-- For local Node backend, use the default `VITE_API_TARGET=http://localhost:3001` (or omit to use default).
+## Running
 
-### Health & Metrics
+- Full local dev (Node backend + frontend):
 
-- Health check: `GET http://localhost:3001/api/health`
-- Prometheus metrics: `GET http://localhost:3001/metrics`
-- Database health: `GET http://localhost:3001/api/db/health` (checks connectivity via `SELECT 1`)
+  ```bash
+  npm run dev:full
+  # backend: http://localhost:3001, frontend: http://localhost:5173
+  ```
 
-### Database Ops
+- Run separately:
+
+  ```bash
+  cd server && npm run dev   # backend only
+  npm run dev                # frontend only (from project root)
+  ```
+
+### Default Login (demo)
+
+- Username: `admin@vetchart.com`
+- Password: `password`
+
+### Environment
+
+- `server/.env`
+  - `JWT_SECRET=dev-change-me` (required; server aborts if missing)
+  - `DATABASE_URL=postgresql://user:password@localhost:5434/mydb`
+  - Optional pool tuning: `PGPOOL_MAX`, `PGPOOL_CONN_TIMEOUT`, `PGPOOL_IDLE`
+- Frontend proxy
+  - Local Node backend: default proxy `http://localhost:3001`
+  - Docker server: set root `.env` → `VITE_API_TARGET=http://localhost:3002`
+
+## Observability
+
+- Health: `GET /api/health`
+- Metrics (Prometheus): `GET /metrics`
+- DB health: `GET /api/db/health`
+
+Prometheus tip
+
+- Scrape `http://localhost:3001/metrics` (or `3002` if Docker server). Example metrics include `http_request_duration_seconds` (by method/code) and DB ping histograms.
+
+## Operations
+
 - Backup: `DATABASE_URL=postgres://user:password@localhost:5434/mydb ./scripts/db-backup.sh`
 - Restore: `DATABASE_URL=postgres://user:password@localhost:5434/mydb ./scripts/db-restore.sh backups/<file>.dump --force`
-- See `ops/backup-restore.md` and `ops/db-maintenance.md` for policies and maintenance playbooks.
+- Guides: `ops/backup-restore.md`, `ops/db-maintenance.md`
 
-## 🖥️ Demo & Screenshots
+## Performance & DB Experiments
 
-Once the application is running, open your web browser and navigate to the address provided by the frontend development server (e.g., `http://localhost:5173`). You should see the VetChart login page.
-
-### Application Flow
-1. **Authentication**: Secure login with role-based dashboard access
-2. **Dashboard**: Overview of daily appointments, patient statistics, and quick actions
-3. **Patient Management**: Add/edit patient profiles with comprehensive medical history
-4. **Appointment Scheduling**: Calendar-based booking with conflict detection
-5. **Medical Records**: Create detailed treatment records with PDF export capability
-6. **Billing System**: Generate invoices with customizable item templates
-7. **Analytics**: Track clinic performance with revenue and appointment metrics
-
-### User Roles & Permissions
-- **Admin**: Full system access including analytics and user management
-- **Veterinarian**: Patient records, appointments, and medical documentation
-- **Staff**: Appointment scheduling, billing, and basic patient information
+- k6 scenarios: `k6/scenarios/*.js` (baseline/pool‑small/pool‑large)
+  - Example: `k6 run -e BASE_URL=http://localhost:3001 -e RATE=30 -e DURATION=2m k6/scenarios/probe_base.js`
+- Indexing exercise (created_at sort): see `sql/indexing/`
+  - Before: `psql $DATABASE_URL -f sql/indexing/explain_scan_before.sql`
+  - Create:  `psql $DATABASE_URL -f sql/indexing/create_idx_db_probes_created_at.sql`
+  - After:  `psql $DATABASE_URL -f sql/indexing/explain_scan_after.sql`
+  - Cleanup: `psql $DATABASE_URL -f sql/indexing/drop_idx_db_probes_created_at.sql`
+- Summary template: `docs/DBRE_EVIDENCE.md`
 
 ## Project Structure
 
 ```
 vet-chart/
-├───server/             # Backend (Node.js, Express.js, Prisma)
-│   ├───prisma/         # Prisma schema and migrations
-│   └───...
-├───src/                # Frontend (React, TypeScript)
-│   ├───components/     # Reusable UI components
-│   ├───contexts/       # React Contexts
-│   ├───hooks/          # Custom React hooks
-│   ├───lib/            # Utility functions
-│   ├───services/       # API service integrations
-│   ├───types/          # TypeScript type definitions
-│   └───...
-├───public/             # Static assets
-├───...
-└───docker-compose.yml  # Docker Compose configuration
+├── server/              # Backend (Express, PG; Prisma schema present)
+│  └── prisma/           # Prisma schema and migrations
+├── src/                 # Frontend (React + TS)
+├── k6/                  # Load/perf tests
+├── sql/indexing/        # SQL for EXPLAIN/index experiments
+├── ops/                 # Ops guides (backup/restore, maintenance)
+├── docs/                # Learning notes and DBRE evidence
+└── docker-compose.yml   # Compose config (db + optional server)
 ```
-## Database Structure(img need update)
-<img width="1085" height="1168" alt="Screenshot 2025-07-31 at 9 35 35 PM" src="https://github.com/user-attachments/assets/22581ff2-84d5-4747-bd71-33e28c387163" />
+
+## Limitations & Roadmap
+
+- Backend uses in‑memory storage for clinic data (demo). Prisma/Postgres integration is planned.
+- Some frontend APIs still use mock paths; will consolidate to real endpoints.
+- Add tests (unit/integration), rate limiting, stronger CORS, and CI.
+
+## Contributing & License
+
+- See `CONTRIBUTING.md` for guidelines.
+- Licensed under the terms in `LICENSE`.
+
+## Database Schema Note
+
+- Current runtime: in‑memory store; Prisma schema lives at `server/prisma/schema.prisma` for future DB wiring. ER diagram and image will be updated when integration lands.
 
 
 ## 🎯 Development Experience & Learning Outcomes
