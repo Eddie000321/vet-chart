@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "node index.js"
+    "dev": "node index.js",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "prisma:generate": "prisma generate",
+    "seed:prisma": "node scripts/seed_prisma.js",
+    "seed:prisma:all": "node scripts/seed_prisma_all.js"
   },
   "dependencies": {
     "@prisma/client": "^6.13.0",

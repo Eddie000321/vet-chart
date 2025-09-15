@@ -133,6 +133,44 @@ cd ..
   - Local Node backend: default proxy `http://localhost:3001`
   - Docker server: set root `.env` → `VITE_API_TARGET=http://localhost:3002`
 
+### Database-backed Mode (UI wired to Postgres)
+
+- Toggle persistence by environment variable:
+  - `PERSIST=prisma` to use Prisma/Postgres for owners, patients, medical records, appointments, and bills.
+- One-time setup:
+  ```bash
+  cd server
+  npm install
+  npx prisma migrate dev --name init
+  npm run seed:prisma   # optional small seed for UI
+  ```
+- Run with DB mode:
+  ```bash
+  # local
+  PERSIST=prisma JWT_SECRET=dev-change-me DATABASE_URL=postgresql://user:password@localhost:5434/mydb npm run dev
+  # or via docker compose (server only)
+  PERSIST=prisma docker compose up -d server
+  ```
+
+### Docker (Server + DB)
+
+- Build and run server + db:
+  ```bash
+  docker compose up -d --build db server
+  ```
+- Access:
+  - Backend: http://localhost:3002
+  - Health: http://localhost:3002/api/health
+  - DB health: http://localhost:3002/api/db/health
+  
+If you enable DB-backed mode:
+  ```bash
+  # run migrations + optional seed once
+  cd server && npx prisma migrate deploy && npm run seed:prisma
+  # start server using DB
+  cd .. && PERSIST=prisma docker compose up -d server
+  ```
+
 ## Observability
 
 - Health: `GET /api/health`

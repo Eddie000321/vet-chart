@@ -7,10 +7,16 @@ const { v4: uuidv4 } = require('uuid');
 const morgan = require('morgan');
 const promClient = require('prom-client');
 const { Pool } = require('pg');
+const { PrismaClient } = require('@prisma/client');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
+const USE_PRISMA = String(process.env.PERSIST || '').toLowerCase() === 'prisma';
+let prisma = null;
+if (USE_PRISMA) {
+  prisma = new PrismaClient();
+}
 
 if (!JWT_SECRET) {
   console.error('Missing required env JWT_SECRET. Set it in server/.env or environment.');
@@ -1175,8 +1181,12 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 // Owner routes
 app.get('/api/owners', authenticateToken, async (req, res) => {
   try {
+    if (USE_PRISMA) {
+      const owners = await prisma.owner.findMany({ orderBy: { createdAt: 'desc' } });
+      return res.json(owners);
+    }
     const owners = db.owners.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    res.json(owners);
+    return res.json(owners);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1185,7 +1195,12 @@ app.get('/api/owners', authenticateToken, async (req, res) => {
 app.post('/api/owners', authenticateToken, async (req, res) => {
   try {
     const { firstName, lastName, email, phone, address, notes } = req.body;
-    
+    if (USE_PRISMA) {
+      const created = await prisma.owner.create({
+        data: { firstName, lastName, email, phone, address, notes: notes || null },
+      });
+      return res.status(201).json(created);
+    }
     const newOwner = {
       id: uuidv4(),
       firstName,
@@ -1196,9 +1211,8 @@ app.post('/api/owners', authenticateToken, async (req, res) => {
       notes: notes || '',
       createdAt: new Date().toISOString()
     };
-    
     db.owners.push(newOwner);
-    res.status(201).json(newOwner);
+    return res.status(201).json(newOwner);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1206,12 +1220,16 @@ app.post('/api/owners', authenticateToken, async (req, res) => {
 
 app.get('/api/owners/:id', authenticateToken, async (req, res) => {
   try {
+    if (USE_PRISMA) {
+      const owner = await prisma.owner.findUnique({ where: { id: req.params.id } });
+      if (!owner) return res.status(404).json({ error: 'Owner not found' });
+      return res.json(owner);
+    }
     const owner = db.owners.find(o => o.id === req.params.id);
-    
     if (!owner) {
       return res.status(404).json({ error: 'Owner not found' });
     }
-    res.json(owner);
+    return res.json(owner);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1220,20 +1238,26 @@ app.get('/api/owners/:id', authenticateToken, async (req, res) => {
 app.delete('/api/owners/:id', authenticateToken, async (req, res) => {
   try {
     const ownerId = req.params.id;
+    if (USE_PRISMA) {
+      const patientCount = await prisma.patient.count({ where: { ownerId } });
+      if (patientCount > 0) {
+        return res.status(400).json({ error: 'Cannot delete owner with existing patients' });
+      }
+      const existing = await prisma.owner.findUnique({ where: { id: ownerId } });
+      if (!existing) return res.status(404).json({ error: 'Owner not found' });
+      await prisma.owner.delete({ where: { id: ownerId } });
+      return res.json({ message: 'Owner deleted successfully' });
+    }
     const ownerIndex = db.owners.findIndex(o => o.id === ownerId);
-    
     if (ownerIndex === -1) {
       return res.status(404).json({ error: 'Owner not found' });
     }
-    
-    // Check if owner has any patients
     const hasPatients = db.patients.some(p => p.ownerId === ownerId);
     if (hasPatients) {
       return res.status(400).json({ error: 'Cannot delete owner with existing patients' });
     }
-    
     db.owners.splice(ownerIndex, 1);
-    res.json({ message: 'Owner deleted successfully' });
+    return res.json({ message: 'Owner deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1243,13 +1267,17 @@ app.put('/api/owners/:id', authenticateToken, async (req, res) => {
   try {
     const ownerId = req.params.id;
     const { firstName, lastName, email, phone, address, notes } = req.body;
-    
+    if (USE_PRISMA) {
+      const updated = await prisma.owner.update({
+        where: { id: ownerId },
+        data: { firstName, lastName, email, phone, address, notes: notes || null },
+      });
+      return res.json(updated);
+    }
     const ownerIndex = db.owners.findIndex(o => o.id === ownerId);
-    
     if (ownerIndex === -1) {
       return res.status(404).json({ error: 'Owner not found' });
     }
-    
     const updatedOwner = {
       ...db.owners[ownerIndex],
       firstName,
@@ -1259,9 +1287,8 @@ app.put('/api/owners/:id', authenticateToken, async (req, res) => {
       address,
       notes: notes || ''
     };
-    
     db.owners[ownerIndex] = updatedOwner;
-    res.json(updatedOwner);
+    return res.json(updatedOwner);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1270,15 +1297,20 @@ app.put('/api/owners/:id', authenticateToken, async (req, res) => {
 // Patient routes
 app.get('/api/patients', authenticateToken, async (req, res) => {
   try {
-    const patientsWithOwners = db.patients.map(patient => {
-      const owner = db.owners.find(o => o.id === patient.ownerId);
-      return {
-        ...patient,
-        owner: owner || null
-      };
-    }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    res.json(patientsWithOwners);
+    if (USE_PRISMA) {
+      const patients = await prisma.patient.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: { owner: true },
+      });
+      return res.json(patients);
+    }
+    const patientsWithOwners = db.patients
+      .map(patient => {
+        const owner = db.owners.find(o => o.id === patient.ownerId);
+        return { ...patient, owner: owner || null };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return res.json(patientsWithOwners);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1287,7 +1319,25 @@ app.get('/api/patients', authenticateToken, async (req, res) => {
 app.post('/api/patients', authenticateToken, async (req, res) => {
   try {
     const { name, species, breed, age, gender, weight, ownerId, weightUnit, assignedDoctor, handlingDifficulty } = req.body;
-    
+    if (USE_PRISMA) {
+      const created = await prisma.patient.create({
+        data: {
+          name,
+          species,
+          breed,
+          age,
+          gender,
+          weight,
+          weightUnit: weightUnit || 'lbs',
+          ownerId,
+          assignedDoctor: assignedDoctor || null,
+          status: 'active',
+          handlingDifficulty: handlingDifficulty || null,
+        },
+        include: { owner: true },
+      });
+      return res.status(201).json(created);
+    }
     const newPatient = {
       id: uuidv4(),
       name,
@@ -1303,16 +1353,10 @@ app.post('/api/patients', authenticateToken, async (req, res) => {
       handlingDifficulty: handlingDifficulty || null,
       createdAt: new Date().toISOString()
     };
-    
     db.patients.push(newPatient);
-    
     const owner = db.owners.find(o => o.id === ownerId);
-    const patientWithOwner = {
-      ...newPatient,
-      owner: owner || null
-    };
-    
-    res.status(201).json(patientWithOwner);
+    const patientWithOwner = { ...newPatient, owner: owner || null };
+    return res.status(201).json(patientWithOwner);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1320,19 +1364,21 @@ app.post('/api/patients', authenticateToken, async (req, res) => {
 
 app.get('/api/patients/:id', authenticateToken, async (req, res) => {
   try {
+    if (USE_PRISMA) {
+      const patient = await prisma.patient.findUnique({
+        where: { id: req.params.id },
+        include: { owner: true },
+      });
+      if (!patient) return res.status(404).json({ error: 'Patient not found' });
+      return res.json(patient);
+    }
     const patient = db.patients.find(p => p.id === req.params.id);
-    
     if (!patient) {
       return res.status(404).json({ error: 'Patient not found' });
     }
-    
     const owner = db.owners.find(o => o.id === patient.ownerId);
-    const patientWithOwner = {
-      ...patient,
-      owner: owner || null
-    };
-    
-    res.json(patientWithOwner);
+    const patientWithOwner = { ...patient, owner: owner || null };
+    return res.json(patientWithOwner);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1342,13 +1388,30 @@ app.put('/api/patients/:id', authenticateToken, async (req, res) => {
   try {
     const patientId = req.params.id;
     const { name, species, breed, age, gender, weight, ownerId, weightUnit, status, assignedDoctor, handlingDifficulty } = req.body;
-    
+    if (USE_PRISMA) {
+      const updated = await prisma.patient.update({
+        where: { id: patientId },
+        data: {
+          name,
+          species,
+          breed,
+          age,
+          gender,
+          weight,
+          ownerId,
+          weightUnit: weightUnit || 'lbs',
+          status: status || 'active',
+          assignedDoctor: assignedDoctor || null,
+          handlingDifficulty: handlingDifficulty || null,
+        },
+        include: { owner: true },
+      });
+      return res.json(updated);
+    }
     const patientIndex = db.patients.findIndex(p => p.id === patientId);
-    
     if (patientIndex === -1) {
       return res.status(404).json({ error: 'Patient not found' });
     }
-    
     const updatedPatient = {
       ...db.patients[patientIndex],
       name,
@@ -1363,16 +1426,10 @@ app.put('/api/patients/:id', authenticateToken, async (req, res) => {
       assignedDoctor: assignedDoctor || '',
       handlingDifficulty: handlingDifficulty || null
     };
-    
     db.patients[patientIndex] = updatedPatient;
-    
     const owner = db.owners.find(o => o.id === ownerId);
-    const patientWithOwner = {
-      ...updatedPatient,
-      owner: owner || null
-    };
-    
-    res.json(patientWithOwner);
+    const patientWithOwner = { ...updatedPatient, owner: owner || null };
+    return res.json(patientWithOwner);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1381,20 +1438,26 @@ app.put('/api/patients/:id', authenticateToken, async (req, res) => {
 app.delete('/api/patients/:id', authenticateToken, async (req, res) => {
   try {
     const patientId = req.params.id;
+    if (USE_PRISMA) {
+      const recCount = await prisma.medicalRecord.count({ where: { patientId } });
+      if (recCount > 0) {
+        return res.status(400).json({ error: 'Cannot delete patient with existing medical records' });
+      }
+      const existing = await prisma.patient.findUnique({ where: { id: patientId } });
+      if (!existing) return res.status(404).json({ error: 'Patient not found' });
+      await prisma.patient.delete({ where: { id: patientId } });
+      return res.json({ message: 'Patient deleted successfully' });
+    }
     const patientIndex = db.patients.findIndex(p => p.id === patientId);
-    
     if (patientIndex === -1) {
       return res.status(404).json({ error: 'Patient not found' });
     }
-    
-    // Check if patient has any medical records
     const hasRecords = db.medical_records.some(r => r.patientId === patientId);
     if (hasRecords) {
       return res.status(400).json({ error: 'Cannot delete patient with existing medical records' });
     }
-    
     db.patients.splice(patientIndex, 1);
-    res.json({ message: 'Patient deleted successfully' });
+    return res.json({ message: 'Patient deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1403,15 +1466,20 @@ app.delete('/api/patients/:id', authenticateToken, async (req, res) => {
 // Medical records routes
 app.get('/api/records', authenticateToken, async (req, res) => {
   try {
-    const recordsWithPatients = db.medical_records.map(record => {
-      const patient = db.patients.find(p => p.id === record.patientId);
-      return {
-        ...record,
-        patient: patient || null
-      };
-    }).sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
-    
-    res.json(recordsWithPatients);
+    if (USE_PRISMA) {
+      const records = await prisma.medicalRecord.findMany({
+        include: { patient: true },
+        orderBy: { visitDate: 'desc' },
+      });
+      return res.json(records);
+    }
+    const recordsWithPatients = db.medical_records
+      .map(record => {
+        const patient = db.patients.find(p => p.id === record.patientId);
+        return { ...record, patient: patient || null };
+      })
+      .sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
+    return res.json(recordsWithPatients);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1420,7 +1488,13 @@ app.get('/api/records', authenticateToken, async (req, res) => {
 app.post('/api/records', authenticateToken, async (req, res) => {
   try {
     const { patientId, visitDate, symptoms, diagnosis, treatment, notes, veterinarian } = req.body;
-    
+    if (USE_PRISMA) {
+      const created = await prisma.medicalRecord.create({
+        data: { patientId, visitDate: new Date(visitDate), symptoms, diagnosis, treatment, notes, veterinarian },
+        include: { patient: true },
+      });
+      return res.status(201).json(created);
+    }
     const newRecord = {
       id: uuidv4(),
       patientId,
@@ -1432,16 +1506,10 @@ app.post('/api/records', authenticateToken, async (req, res) => {
       veterinarian,
       createdAt: new Date().toISOString()
     };
-    
     db.medical_records.push(newRecord);
-    
     const patient = db.patients.find(p => p.id === patientId);
-    const recordWithPatient = {
-      ...newRecord,
-      patient: patient || null
-    };
-    
-    res.status(201).json(recordWithPatient);
+    const recordWithPatient = { ...newRecord, patient: patient || null };
+    return res.status(201).json(recordWithPatient);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1449,16 +1517,22 @@ app.post('/api/records', authenticateToken, async (req, res) => {
 
 app.get('/api/records/patient/:patientId', authenticateToken, async (req, res) => {
   try {
+    if (USE_PRISMA) {
+      const records = await prisma.medicalRecord.findMany({
+        where: { patientId: req.params.patientId },
+        include: { patient: true },
+        orderBy: { visitDate: 'desc' },
+      });
+      return res.json(records);
+    }
     const records = db.medical_records.filter(r => r.patientId === req.params.patientId);
-    const recordsWithPatients = records.map(record => {
-      const patient = db.patients.find(p => p.id === record.patientId);
-      return {
-        ...record,
-        patient: patient || null
-      };
-    }).sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
-    
-    res.json(recordsWithPatients);
+    const recordsWithPatients = records
+      .map(record => {
+        const patient = db.patients.find(p => p.id === record.patientId);
+        return { ...record, patient: patient || null };
+      })
+      .sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
+    return res.json(recordsWithPatients);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1468,13 +1542,18 @@ app.put('/api/records/:id', authenticateToken, async (req, res) => {
   try {
     const recordId = req.params.id;
     const { patientId, visitDate, symptoms, diagnosis, treatment, notes, veterinarian } = req.body;
-    
+    if (USE_PRISMA) {
+      const updated = await prisma.medicalRecord.update({
+        where: { id: recordId },
+        data: { patientId, visitDate: new Date(visitDate), symptoms, diagnosis, treatment, notes, veterinarian },
+        include: { patient: true },
+      });
+      return res.json(updated);
+    }
     const recordIndex = db.medical_records.findIndex(r => r.id === recordId);
-    
     if (recordIndex === -1) {
       return res.status(404).json({ error: 'Medical record not found' });
     }
-    
     const updatedRecord = {
       ...db.medical_records[recordIndex],
       patientId,
@@ -1485,16 +1564,10 @@ app.put('/api/records/:id', authenticateToken, async (req, res) => {
       notes,
       veterinarian
     };
-    
     db.medical_records[recordIndex] = updatedRecord;
-    
     const patient = db.patients.find(p => p.id === patientId);
-    const recordWithPatient = {
-      ...updatedRecord,
-      patient: patient || null
-    };
-    
-    res.json(recordWithPatient);
+    const recordWithPatient = { ...updatedRecord, patient: patient || null };
+    return res.json(recordWithPatient);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1503,27 +1576,37 @@ app.put('/api/records/:id', authenticateToken, async (req, res) => {
 // Dashboard stats route
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
+    if (USE_PRISMA) {
+      // recent 10 records
+      const recentRecords = await prisma.medicalRecord.findMany({
+        include: { patient: true },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      });
+      // today's appointments
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const todayAppointments = await prisma.appointment.count({
+        where: {
+          status: 'scheduled',
+          date: { gte: start, lt: end },
+        },
+      });
+      const totalPatients = await prisma.patient.count();
+      const totalOwners = await prisma.owner.count();
+      return res.json({ totalPatients, totalOwners, todayAppointments, recentRecords });
+    }
     const recentRecords = db.medical_records
       .map(record => {
         const patient = db.patients.find(p => p.id === record.patientId);
-        return {
-          ...record,
-          patient: patient || null
-        };
+        return { ...record, patient: patient || null };
       })
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, 10);
-    
-    // Count today's appointments
     const today = new Date().toISOString().split('T')[0];
     const todayAppointments = db.appointments.filter(apt => apt.date === today && apt.status === 'scheduled').length;
-    
-    res.json({
-      totalPatients: db.patients.length,
-      totalOwners: db.owners.length,
-      todayAppointments,
-      recentRecords
-    });
+    return res.json({ totalPatients: db.patients.length, totalOwners: db.owners.length, todayAppointments, recentRecords });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1532,6 +1615,13 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
 // Appointment routes
 app.get('/api/appointments', authenticateToken, async (req, res) => {
   try {
+    if (USE_PRISMA) {
+      const appts = await prisma.appointment.findMany({
+        include: { patient: { include: { owner: true } } },
+        orderBy: [{ date: 'desc' }, { time: 'desc' }],
+      });
+      return res.json(appts);
+    }
     const appointmentsWithPatients = db.appointments.map(appointment => {
       const patient = db.patients.find(p => p.id === appointment.patientId);
       const patientWithOwner = patient ? {
@@ -1549,7 +1639,7 @@ app.get('/api/appointments', authenticateToken, async (req, res) => {
       return dateB.getTime() - dateA.getTime();
     });
     
-    res.json(appointmentsWithPatients);
+    return res.json(appointmentsWithPatients);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1558,7 +1648,22 @@ app.get('/api/appointments', authenticateToken, async (req, res) => {
 app.post('/api/appointments', authenticateToken, async (req, res) => {
   try {
     const { patientId, date, time, duration, reason, notes, veterinarian, status } = req.body;
-    
+    if (USE_PRISMA) {
+      const created = await prisma.appointment.create({
+        data: {
+          patientId,
+          date: new Date(date),
+          time,
+          duration,
+          reason,
+          notes: notes || null,
+          veterinarian,
+          status: status || 'scheduled',
+        },
+        include: { patient: { include: { owner: true } } },
+      });
+      return res.status(201).json(created);
+    }
     const newAppointment = {
       id: uuidv4(),
       patientId,
@@ -1585,7 +1690,7 @@ app.post('/api/appointments', authenticateToken, async (req, res) => {
       patient: patientWithOwner
     };
     
-    res.status(201).json(appointmentWithPatient);
+    return res.status(201).json(appointmentWithPatient);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1595,7 +1700,14 @@ app.put('/api/appointments/:id', authenticateToken, async (req, res) => {
   try {
     const appointmentId = req.params.id;
     const { patientId, date, time, duration, reason, notes, veterinarian, status } = req.body;
-    
+    if (USE_PRISMA) {
+      const updated = await prisma.appointment.update({
+        where: { id: appointmentId },
+        data: { patientId, date: new Date(date), time, duration, reason, notes: notes || null, veterinarian, status },
+        include: { patient: { include: { owner: true } } },
+      });
+      return res.json(updated);
+    }
     const appointmentIndex = db.appointments.findIndex(a => a.id === appointmentId);
     
     if (appointmentIndex === -1) {
@@ -1627,7 +1739,7 @@ app.put('/api/appointments/:id', authenticateToken, async (req, res) => {
       patient: patientWithOwner
     };
     
-    res.json(appointmentWithPatient);
+    return res.json(appointmentWithPatient);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1637,7 +1749,14 @@ app.patch('/api/appointments/:id/status', authenticateToken, async (req, res) =>
   try {
     const appointmentId = req.params.id;
     const { status } = req.body;
-    
+    if (USE_PRISMA) {
+      const updated = await prisma.appointment.update({
+        where: { id: appointmentId },
+        data: { status },
+        include: { patient: { include: { owner: true } } },
+      });
+      return res.json(updated);
+    }
     const appointmentIndex = db.appointments.findIndex(a => a.id === appointmentId);
     
     if (appointmentIndex === -1) {
@@ -1658,7 +1777,7 @@ app.patch('/api/appointments/:id/status', authenticateToken, async (req, res) =>
       patient: patientWithOwner
     };
     
-    res.json(appointmentWithPatient);
+    return res.json(appointmentWithPatient);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1667,14 +1786,18 @@ app.patch('/api/appointments/:id/status', authenticateToken, async (req, res) =>
 app.delete('/api/appointments/:id', authenticateToken, async (req, res) => {
   try {
     const appointmentId = req.params.id;
+    if (USE_PRISMA) {
+      const existing = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+      if (!existing) return res.status(404).json({ error: 'Appointment not found' });
+      await prisma.appointment.delete({ where: { id: appointmentId } });
+      return res.json({ message: 'Appointment deleted successfully' });
+    }
     const appointmentIndex = db.appointments.findIndex(a => a.id === appointmentId);
-    
     if (appointmentIndex === -1) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
-    
     db.appointments.splice(appointmentIndex, 1);
-    res.json({ message: 'Appointment deleted successfully' });
+    return res.json({ message: 'Appointment deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1683,25 +1806,22 @@ app.delete('/api/appointments/:id', authenticateToken, async (req, res) => {
 // Bills API Routes
 app.get('/api/bills', authenticateToken, async (req, res) => {
   try {
+    if (USE_PRISMA) {
+      const bills = await prisma.bill.findMany({
+        include: { owner: true, patient: true, appointment: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      return res.json(bills);
+    }
     const bills = db.bills.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    // Populate related data
     const populatedBills = bills.map((bill) => {
       const owner = db.owners.find(o => o.id === bill.ownerId);
       const patient = db.patients.find(p => p.id === bill.patientId);
       const appointment = bill.appointmentId ? db.appointments.find(a => a.id === bill.appointmentId) : null;
       const medicalRecords = db.medical_records.filter(r => bill.medicalRecordIds.includes(r.id));
-      
-      return {
-        ...bill,
-        owner,
-        patient,
-        appointment,
-        medicalRecords
-      };
+      return { ...bill, owner, patient, appointment, medicalRecords };
     });
-    
-    res.json(populatedBills);
+    return res.json(populatedBills);
   } catch (error) {
     console.error('Error fetching bills:', error);
     res.status(500).json({ message: 'Failed to fetch bills' });
@@ -1723,11 +1843,31 @@ app.post('/api/bills', authenticateToken, async (req, res) => {
       dueDate,
       notes
     } = req.body;
-
+    if (USE_PRISMA) {
+      const billCount = await prisma.bill.count();
+      const billNumber = `BILL-${String(billCount + 1).padStart(6, '0')}`;
+      const created = await prisma.bill.create({
+        data: {
+          billNumber,
+          ownerId,
+          patientId,
+          appointmentId: appointmentId || null,
+          medicalRecordIds,
+          items,
+          subtotal,
+          tax,
+          totalAmount,
+          status,
+          dueDate: new Date(dueDate),
+          notes: notes || null,
+        },
+        include: { owner: true, patient: true, appointment: true },
+      });
+      return res.status(201).json(created);
+    }
     // Generate bill number
     const billCount = db.bills.length;
     const billNumber = `BILL-${String(billCount + 1).padStart(6, '0')}`;
-
     const newBill = {
       id: uuidv4(),
       billNumber,
@@ -1744,24 +1884,13 @@ app.post('/api/bills', authenticateToken, async (req, res) => {
       notes,
       createdAt: new Date().toISOString()
     };
-
     db.bills.push(newBill);
-
-    // Populate related data for response
     const owner = db.owners.find(o => o.id === ownerId);
     const patient = db.patients.find(p => p.id === patientId);
     const appointment = appointmentId ? db.appointments.find(a => a.id === appointmentId) : null;
     const medicalRecords = db.medical_records.filter(r => medicalRecordIds.includes(r.id));
-
-    const populatedBill = {
-      ...newBill,
-      owner,
-      patient,
-      appointment,
-      medicalRecords
-    };
-
-    res.status(201).json(populatedBill);
+    const populatedBill = { ...newBill, owner, patient, appointment, medicalRecords };
+    return res.status(201).json(populatedBill);
   } catch (error) {
     console.error('Error creating bill:', error);
     res.status(500).json({ message: 'Failed to create bill' });
@@ -1771,27 +1900,24 @@ app.post('/api/bills', authenticateToken, async (req, res) => {
 app.get('/api/bills/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+    if (USE_PRISMA) {
+      const bill = await prisma.bill.findUnique({
+        where: { id },
+        include: { owner: true, patient: true, appointment: true },
+      });
+      if (!bill) return res.status(404).json({ message: 'Bill not found' });
+      return res.json(bill);
+    }
     const bill = db.bills.find(b => b.id === id);
-
     if (!bill) {
       return res.status(404).json({ message: 'Bill not found' });
     }
-
-    // Populate related data
     const owner = db.owners.find(o => o.id === bill.ownerId);
     const patient = db.patients.find(p => p.id === bill.patientId);
     const appointment = bill.appointmentId ? db.appointments.find(a => a.id === bill.appointmentId) : null;
     const medicalRecords = db.medical_records.filter(r => bill.medicalRecordIds.includes(r.id));
-
-    const populatedBill = {
-      ...bill,
-      owner,
-      patient,
-      appointment,
-      medicalRecords
-    };
-
-    res.json(populatedBill);
+    const populatedBill = { ...bill, owner, patient, appointment, medicalRecords };
+    return res.json(populatedBill);
   } catch (error) {
     console.error('Error fetching bill:', error);
     res.status(500).json({ message: 'Failed to fetch bill' });
@@ -1802,39 +1928,31 @@ app.put('/api/bills/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-
+    if (USE_PRISMA) {
+      const data = { ...updateData };
+      if (data.dueDate) data.dueDate = new Date(data.dueDate);
+      const updated = await prisma.bill.update({
+        where: { id },
+        data,
+        include: { owner: true, patient: true, appointment: true },
+      });
+      return res.json(updated);
+    }
     if (updateData.dueDate) {
       updateData.dueDate = new Date(updateData.dueDate);
     }
-
     const billIndex = db.bills.findIndex(b => b.id === id);
-    
     if (billIndex === -1) {
       return res.status(404).json({ message: 'Bill not found' });
     }
-
-    const updatedBill = {
-      ...db.bills[billIndex],
-      ...updateData
-    };
-
+    const updatedBill = { ...db.bills[billIndex], ...updateData };
     db.bills[billIndex] = updatedBill;
-
-    // Populate related data for response
     const owner = db.owners.find(o => o.id === updatedBill.ownerId);
     const patient = db.patients.find(p => p.id === updatedBill.patientId);
     const appointment = updatedBill.appointmentId ? db.appointments.find(a => a.id === updatedBill.appointmentId) : null;
     const medicalRecords = db.medical_records.filter(r => updatedBill.medicalRecordIds.includes(r.id));
-
-    const populatedBill = {
-      ...updatedBill,
-      owner,
-      patient,
-      appointment,
-      medicalRecords
-    };
-
-    res.json(populatedBill);
+    const populatedBill = { ...updatedBill, owner, patient, appointment, medicalRecords };
+    return res.json(populatedBill);
   } catch (error) {
     console.error('Error updating bill:', error);
     res.status(500).json({ message: 'Failed to update bill' });
@@ -1844,14 +1962,18 @@ app.put('/api/bills/:id', authenticateToken, async (req, res) => {
 app.delete('/api/bills/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+    if (USE_PRISMA) {
+      const existing = await prisma.bill.findUnique({ where: { id } });
+      if (!existing) return res.status(404).json({ message: 'Bill not found' });
+      await prisma.bill.delete({ where: { id } });
+      return res.json({ message: 'Bill deleted successfully' });
+    }
     const billIndex = db.bills.findIndex(b => b.id === id);
-    
     if (billIndex === -1) {
       return res.status(404).json({ message: 'Bill not found' });
     }
-    
     db.bills.splice(billIndex, 1);
-    res.json({ message: 'Bill deleted successfully' });
+    return res.json({ message: 'Bill deleted successfully' });
   } catch (error) {
     console.error('Error deleting bill:', error);
     res.status(500).json({ message: 'Failed to delete bill' });
@@ -1861,25 +1983,23 @@ app.delete('/api/bills/:id', authenticateToken, async (req, res) => {
 app.get('/api/bills/owner/:ownerId', authenticateToken, async (req, res) => {
   try {
     const { ownerId } = req.params;
+    if (USE_PRISMA) {
+      const bills = await prisma.bill.findMany({
+        where: { ownerId },
+        include: { owner: true, patient: true, appointment: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      return res.json(bills);
+    }
     const bills = db.bills.filter(b => b.ownerId === ownerId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    // Populate related data
     const populatedBills = bills.map((bill) => {
       const owner = db.owners.find(o => o.id === bill.ownerId);
       const patient = db.patients.find(p => p.id === bill.patientId);
       const appointment = bill.appointmentId ? db.appointments.find(a => a.id === bill.appointmentId) : null;
       const medicalRecords = db.medical_records.filter(r => bill.medicalRecordIds.includes(r.id));
-      
-      return {
-        ...bill,
-        owner,
-        patient,
-        appointment,
-        medicalRecords
-      };
+      return { ...bill, owner, patient, appointment, medicalRecords };
     });
-    
-    res.json(populatedBills);
+    return res.json(populatedBills);
   } catch (error) {
     console.error('Error fetching bills by owner:', error);
     res.status(500).json({ message: 'Failed to fetch bills' });
@@ -1889,25 +2009,23 @@ app.get('/api/bills/owner/:ownerId', authenticateToken, async (req, res) => {
 app.get('/api/bills/patient/:patientId', authenticateToken, async (req, res) => {
   try {
     const { patientId } = req.params;
+    if (USE_PRISMA) {
+      const bills = await prisma.bill.findMany({
+        where: { patientId },
+        include: { owner: true, patient: true, appointment: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      return res.json(bills);
+    }
     const bills = db.bills.filter(b => b.patientId === patientId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    // Populate related data
     const populatedBills = bills.map((bill) => {
       const owner = db.owners.find(o => o.id === bill.ownerId);
       const patient = db.patients.find(p => p.id === bill.patientId);
       const appointment = bill.appointmentId ? db.appointments.find(a => a.id === bill.appointmentId) : null;
       const medicalRecords = db.medical_records.filter(r => bill.medicalRecordIds.includes(r.id));
-      
-      return {
-        ...bill,
-        owner,
-        patient,
-        appointment,
-        medicalRecords
-      };
+      return { ...bill, owner, patient, appointment, medicalRecords };
     });
-    
-    res.json(populatedBills);
+    return res.json(populatedBills);
   } catch (error) {
     console.error('Error fetching bills by patient:', error);
     res.status(500).json({ message: 'Failed to fetch bills' });

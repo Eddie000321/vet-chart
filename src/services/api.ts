@@ -639,7 +639,7 @@ export const billsAPI = {
 
   create: async (billData: any) => {
     const response = await fetch(`${API_BASE_URL}/bills`, {
-      method: POST,
+      method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(billData)
     });
@@ -655,7 +655,7 @@ export const billsAPI = {
 
   update: async (id: string, billData: any) => {
     const response = await fetch(`${API_BASE_URL}/bills/${id}`, {
-      method: PUT,
+      method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(billData)
     });
@@ -664,7 +664,7 @@ export const billsAPI = {
 
   delete: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/bills/${id}`, {
-      method: DELETE,
+      method: 'DELETE',
       headers: getAuthHeaders()
     });
     return handleResponse(response);
