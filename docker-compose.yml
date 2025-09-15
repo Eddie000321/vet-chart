@@ -10,6 +10,7 @@ services:
     depends_on:
       - db
     environment:
+      JWT_SECRET: ${JWT_SECRET:-dev-change-me}
       DATABASE_URL: postgresql://user:password@db:5432/mydb
 
   db:
