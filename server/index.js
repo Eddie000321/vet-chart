@@ -1946,7 +1946,11 @@ app.get('/api/db/test-scan', authenticateToken, async (req, res) => {
   try {
     await ensureProbeTable();
     const start = process.hrtime.bigint();
-    const result = await dbPool.query('SELECT id, created_at FROM db_probes ORDER BY id DESC LIMIT $1', [limit]);
+    // Sort by created_at to align with indexing exercise and EXPLAIN scripts
+    const result = await dbPool.query(
+      'SELECT id, created_at FROM db_probes ORDER BY created_at DESC LIMIT $1',
+      [limit]
+    );
     const durationMs = Number((process.hrtime.bigint() - start) / 1000000n);
     res.json({ status: 'ok', rows: result.rowCount, latencyMs: durationMs });
   } catch (err) {
